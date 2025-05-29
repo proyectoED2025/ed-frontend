@@ -1,0 +1,17 @@
+.login-btn {
+  min-width: 120px;
+  font-weight: 500;
+}
+
+.card {
+  border-radius: 12px;
+}
+
+.form-control.is-invalid {
+  border-color: #dc3545;
+  box-shadow: none;
+}
+
+.invalid-feedback {
+  font-size: 0.875rem;
+}

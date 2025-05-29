@@ -1,0 +1,66 @@
+<div class="container-fluid bg-light min-vh-100 d-flex justify-content-center align-items-center">
+  <div class="card shadow p-4" style="max-width: 400px; width: 100%;">
+    <h4 class="text-center mb-4">Iniciar sesión</h4>
+
+    <form (ngSubmit)="onSubmit()" #loginForm="ngForm" novalidate>
+      <div class="mb-3">
+        <label for="rut" class="form-label">RUT</label>
+        <input
+          type="text"
+          id="rut"
+          name="rut"
+          class="form-control"
+          [(ngModel)]="data.rut"
+          required
+          [ngClass]="{ 'is-invalid': submitted && rutInvalido }"
+        />
+        <div *ngIf="submitted && rutInvalido" class="invalid-feedback">
+          RUT inválido
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label for="email" class="form-label">Usuario (email)</label>
+        <input
+          type="email"
+          id="email"
+          name="email"
+          class="form-control"
+          [(ngModel)]="data.email"
+          required
+          #emailInput="ngModel"
+          [ngClass]="{ 'is-invalid': submitted && emailInput.invalid }"
+        />
+        <div *ngIf="submitted && emailInput.invalid" class="invalid-feedback">
+          Email inválido
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label for="password" class="form-label">Contraseña</label>
+        <input
+          type="password"
+          id="password"
+          name="password"
+          class="form-control"
+          [(ngModel)]="data.password"
+          required
+        />
+      </div>
+
+      <div class="text-center mt-3">
+        <button
+          type="submit"
+          class="btn btn-primary px-4 login-btn"
+          [disabled]="loginForm.invalid || rutInvalido"
+        >
+          Ingresar
+        </button>
+      </div>
+
+      <div *ngIf="error" class="text-danger text-center mt-3">
+        {{ error }}
+      </div>
+    </form>
+  </div>
+</div>
