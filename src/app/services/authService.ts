@@ -32,7 +32,7 @@ export class AuthService {
       })
     );
   }
-
+// prueba
   register(data: any): Observable<any> {
     return this.http.post(this.registerUrl, data, { observe: 'response' }).pipe(
       map((response: HttpResponse<any>) => {
