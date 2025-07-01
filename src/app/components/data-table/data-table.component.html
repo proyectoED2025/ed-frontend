@@ -1,0 +1,37 @@
+<div class="data-table-container">
+  <div class="table-wrapper">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th *ngFor="let column of columns" class="table-header">
+            {{ column.label }}
+          </th>
+          <th *ngIf="buttons.length > 0" class="table-header actions-header">
+            Acciones
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let row of filteredData; let i = index" class="table-row">
+          <td *ngFor="let column of columns" class="table-cell">
+            {{ getCellValue(row, column.key) }}
+          </td>
+          <td *ngIf="buttons.length > 0" class="table-cell actions-cell">
+            <button
+              *ngFor="let button of buttons"
+              type="button"
+              class="action-button"
+              [ngClass]="button.class"
+              (click)="onButtonClick(button.id, row, i)">
+              {{ button.label }}
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  
+  <div *ngIf="filteredData.length === 0" class="no-data">
+    No hay datos disponibles
+  </div>
+</div>

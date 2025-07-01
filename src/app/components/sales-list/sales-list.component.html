@@ -1,0 +1,40 @@
+<div class="sales-list-container">
+  <div class="search-section">
+    <h2 class="page-title">Lista de Ventas</h2>
+    
+    <div class="search-controls">
+      <div class="search-input-group">
+        <input
+          type="text"
+          class="search-input"
+          placeholder="Buscar ventas..."
+          [(ngModel)]="searchText"
+          (keyup.enter)="onSearch()">
+        
+        <button
+          type="button"
+          class="search-button"
+          (click)="onSearch()">
+          Buscar
+        </button>
+        
+        <button
+          type="button"
+          class="clear-button"
+          (click)="onClearSearch()"
+          [disabled]="!searchText">
+          Limpiar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="data-table-section">
+    <app-data-table
+      [columns]="columns"
+      [data]="filteredSales"
+      [filters]="''"
+      [buttons]="[]">
+    </app-data-table>
+  </div>
+</div>

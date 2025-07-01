@@ -1,0 +1,132 @@
+.data-table-container {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.table-wrapper {
+  min-width: 100%;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0;
+  background-color: #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+  .table-header {
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+    padding: 12px 16px;
+    text-align: left;
+    font-weight: 600;
+    color: #495057;
+    white-space: nowrap;
+
+    &.actions-header {
+      text-align: center;
+      width: 120px;
+    }
+  }
+
+  .table-row {
+    border-bottom: 1px solid #dee2e6;
+    transition: background-color 0.2s ease;
+
+    &:hover {
+      background-color: #f8f9fa;
+    }
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+
+  .table-cell {
+    padding: 12px 16px;
+    color: #212529;
+    vertical-align: middle;
+
+    &.actions-cell {
+      text-align: center;
+      white-space: nowrap;
+    }
+  }
+}
+
+.action-button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  margin: 0 2px;
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background-color: #0056b3;
+  }
+
+  &.btn-danger {
+    background-color: #dc3545;
+
+    &:hover {
+      background-color: #c82333;
+    }
+  }
+
+  &.btn-warning {
+    background-color: #ffc107;
+    color: #212529;
+
+    &:hover {
+      background-color: #e0a800;
+    }
+  }
+
+  &.btn-success {
+    background-color: #28a745;
+
+    &:hover {
+      background-color: #218838;
+    }
+  }
+
+  &.btn-secondary {
+    background-color: #6c757d;
+
+    &:hover {
+      background-color: #5a6268;
+    }
+  }
+}
+
+.no-data {
+  text-align: center;
+  padding: 24px;
+  color: #6c757d;
+  font-style: italic;
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  margin-top: 16px;
+}
+
+@media (max-width: 768px) {
+  .data-table {
+    font-size: 14px;
+
+    .table-header,
+    .table-cell {
+      padding: 8px 12px;
+    }
+  }
+
+  .action-button {
+    padding: 4px 8px;
+    font-size: 12px;
+    margin: 0 1px;
+  }
+}

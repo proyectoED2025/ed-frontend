@@ -1,0 +1,120 @@
+<div class="contacts-list-container">
+  <div class="search-section">
+    <h2 class="page-title">Lista de Contactos</h2>
+    
+    <div class="search-controls">
+      <div class="search-input-group">
+        <input
+          type="text"
+          class="search-input"
+          placeholder="Buscar contactos..."
+          [(ngModel)]="searchText"
+          (keyup.enter)="onSearch()">
+        
+        <button
+          type="button"
+          class="search-button"
+          (click)="onSearch()">
+          Buscar
+        </button>
+        
+        <button
+          type="button"
+          class="clear-button"
+          (click)="onClearSearch()"
+          [disabled]="!searchText">
+          Limpiar
+        </button>
+        
+        <button
+          type="button"
+          class="add-button"
+          (click)="onAddContact()">
+          + Agregar Contacto
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="data-table-section">
+    <app-data-table
+      [columns]="columns"
+      [data]="filteredContacts"
+      [filters]="''"
+      [buttons]="buttons"
+      (buttonClick)="onButtonClick($event)">
+    </app-data-table>
+    
+    <div class="clickable-rows-overlay" *ngFor="let contact of filteredContacts; let i = index">
+      <div class="row-overlay" (click)="onRowClick(contact)"></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" *ngIf="showModal" (click)="closeModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>{{ isEditing ? 'Editar Contacto' : 'Agregar Contacto' }}</h3>
+      <button type="button" class="close-button" (click)="closeModal()">&times;</button>
+    </div>
+    
+    <form [formGroup]="contactForm" (ngSubmit)="onSaveContact()" class="modal-body">
+      <div class="form-group">
+        <label for="nombre">Nombre *</label>
+        <input
+          type="text"
+          id="nombre"
+          class="form-control"
+          formControlName="nombre"
+          [class.is-invalid]="isFieldInvalid('nombre')">
+        <div class="invalid-feedback" *ngIf="isFieldInvalid('nombre')">
+          El nombre es requerido
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="email">Email *</label>
+        <input
+          type="email"
+          id="email"
+          class="form-control"
+          formControlName="email"
+          [class.is-invalid]="isFieldInvalid('email')">
+        <div class="invalid-feedback" *ngIf="isFieldInvalid('email')">
+          Ingrese un email válido
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="telefono">Teléfono *</label>
+        <input
+          type="tel"
+          id="telefono"
+          class="form-control"
+          formControlName="telefono"
+          [class.is-invalid]="isFieldInvalid('telefono')">
+        <div class="invalid-feedback" *ngIf="isFieldInvalid('telefono')">
+          El teléfono es requerido
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="empresa">Empresa</label>
+        <input
+          type="text"
+          id="empresa"
+          class="form-control"
+          formControlName="empresa">
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-cancel" (click)="closeModal()">
+          Cancelar
+        </button>
+        <button type="submit" class="btn-save" [disabled]="!contactForm.valid">
+          {{ isEditing ? 'Actualizar' : 'Guardar' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
