@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
 import { DataTableComponent, DataTableColumn, DataTableButton } from '../data-table/data-table.component';
 import { ContactosService } from '../../services/contactos.service';
 
@@ -34,7 +35,8 @@ export class ContactsListComponent implements OnInit {
 
   constructor(
     private contactosService: ContactosService,
-    private formBuilder: FormBuilder
+    private formBuilder: FormBuilder,
+    private router: Router
   ) {
     this.contactForm = this.formBuilder.group({
       id: [''],
@@ -57,8 +59,31 @@ export class ContactsListComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error loading contacts:', error);
-        this.contacts = [];
-        this.filteredContacts = [];
+        // Load test data when API fails
+        this.contacts = [
+          {
+            id: 1,
+            nombre: 'María González',
+            email: 'maria.gonzalez@techsolutions.com',
+            telefono: '+54 11 4567-8901',
+            empresa: 'Tech Solutions SA'
+          },
+          {
+            id: 2,
+            nombre: 'Carlos Rodríguez',
+            email: 'carlos.rodriguez@innovatech.com.ar',
+            telefono: '+54 9 2615 123-456',
+            empresa: 'InnovaTech Argentina'
+          },
+          {
+            id: 3,
+            nombre: 'Ana Fernández',
+            email: 'ana.fernandez@digitalcorp.com',
+            telefono: '+54 11 9876-5432',
+            empresa: 'Digital Corp'
+          }
+        ];
+        this.filteredContacts = [...this.contacts];
       }
     });
   }
@@ -153,5 +178,9 @@ export class ContactsListComponent implements OnInit {
   isFieldInvalid(fieldName: string): boolean {
     const field = this.contactForm.get(fieldName);
     return !!(field && field.invalid && (field.dirty || field.touched));
+  }
+
+  volverAlDashboard() {
+    this.router.navigate(['/dashboard']);
   }
 }

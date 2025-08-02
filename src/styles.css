@@ -1,1 +1,64 @@
 /* You can add global styles to this file, and also import other style files */
+
+/* Import modern font */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* Global styles with new color scheme */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #f2f4f8;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  color: #1f2937;
+  line-height: 1.5;
+}
+
+/* Common button styles */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  gap: 8px;
+}
+
+.btn-secondary {
+  background-color: #e0e7ff;
+  color: #1e3a8a;
+  
+  &:hover {
+    background-color: #a5b4fc;
+    color: white;
+    transform: translateY(-1px);
+  }
+}
+
+/* Volver button specific styles */
+.volver-button {
+  margin-bottom: 16px;
+  font-weight: 600;
+  
+  &::before {
+    content: '←';
+    margin-right: 4px;
+  }
+}
+
+/* Card styles */
+.card {
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.02);
+}

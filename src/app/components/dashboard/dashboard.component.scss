@@ -3,7 +3,7 @@
   max-width: 1200px;
   margin: 0 auto;
   min-height: 100vh;
-  background-color: #f8f9fa;
+  background-color: transparent;
 }
 
 .dashboard-header {
@@ -12,9 +12,10 @@
   align-items: center;
   margin-bottom: 32px;
   padding: 24px;
-  background-color: white;
+  background-color: #ffffff;
   border-radius: 12px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.02);
 }
 
 .welcome-section {
@@ -59,10 +60,11 @@
 }
 
 .stat-card {
-  background-color: white;
+  background-color: #ffffff;
   border-radius: 12px;
   padding: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.02);
   display: flex;
   align-items: center;
   gap: 20px;
@@ -70,7 +72,7 @@
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
   }
 }
 
@@ -84,16 +86,31 @@
   border-radius: 12px;
 }
 
-.sales-card .stat-icon {
-  background-color: #e8f5e8;
+.sales-card {
+  border-left: 4px solid #fbbf24;
+
+  .stat-icon {
+    background-color: #fef3c7;
+    color: #f59e0b;
+  }
 }
 
-.stock-card .stat-icon {
-  background-color: #e3f2fd;
+.stock-card {
+  border-left: 4px solid #93c5fd;
+
+  .stat-icon {
+    background-color: #dbeafe;
+    color: #3b82f6;
+  }
 }
 
-.valuation-card .stat-icon {
-  background-color: #fff3e0;
+.valuation-card {
+  border-left: 4px solid #fca5a5;
+
+  .stat-icon {
+    background-color: #fee2e2;
+    color: #ef4444;
+  }
 }
 
 .stat-content {
@@ -117,10 +134,11 @@
 }
 
 .quick-actions {
-  background-color: white;
+  background-color: #ffffff;
   border-radius: 12px;
   padding: 32px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.02);
 }
 
 .section-title {
@@ -147,22 +165,31 @@
   border-radius: 12px;
   text-decoration: none;
   transition: all 0.2s ease;
-  
+
   &:hover {
     background-color: #007bff;
     border-color: #007bff;
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
-    
+
     .action-icon {
       transform: scale(1.1);
     }
-    
+
     .action-text {
       color: white;
     }
   }
 }
+
+.presupuestar-button {
+  &:hover {
+    background-color: #10b981;
+    border-color: #10b981;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  }
+}
+
 
 .action-icon {
   font-size: 32px;
@@ -183,9 +210,10 @@
   align-items: center;
   justify-content: center;
   padding: 80px 24px;
-  background-color: white;
+  background-color: #ffffff;
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.02);
 }
 
 .loading-spinner {

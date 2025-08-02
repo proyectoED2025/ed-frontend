@@ -1,0 +1,227 @@
+<div class="facturador-container">
+  <h2>Facturador</h2>
+  
+  <form [formGroup]="facturadorForm" (ngSubmit)="onSubmit()" class="facturador-form">
+    
+    <!-- Fecha -->
+    <div class="form-group">
+      <label for="fecha">Fecha *</label>
+      <input 
+        type="date" 
+        id="fecha" 
+        formControlName="fecha" 
+        class="form-control"
+        [class.is-invalid]="isFieldInvalid('fecha')">
+      <div class="invalid-feedback" *ngIf="isFieldInvalid('fecha')">
+        La fecha es requerida
+      </div>
+    </div>
+
+    <!-- Sucursal -->
+    <div class="form-group">
+      <label for="sucursal">Sucursal *</label>
+      <select 
+        id="sucursal" 
+        formControlName="sucursal" 
+        class="form-control"
+        [class.is-invalid]="isFieldInvalid('sucursal')">
+        <option value="">Seleccionar sucursal</option>
+        <option *ngFor="let sucursal of sucursales" [value]="sucursal.Id">
+          {{sucursal.Nombre}}
+        </option>
+      </select>
+      <div class="invalid-feedback" *ngIf="isFieldInvalid('sucursal')">
+        La sucursal es requerida
+      </div>
+    </div>
+
+    <!-- Tipo de comprobante -->
+    <div class="form-group">
+      <label for="tipo">Tipo de Comprobante *</label>
+      <select 
+        id="tipo" 
+        formControlName="tipo" 
+        class="form-control"
+        [class.is-invalid]="isFieldInvalid('tipo')">
+        <option value="">Seleccionar tipo</option>
+        <option *ngFor="let tipo of tipos" [value]="tipo.Id">
+          {{tipo.Nombre}}
+        </option>
+      </select>
+      <div class="invalid-feedback" *ngIf="isFieldInvalid('tipo')">
+        El tipo de comprobante es requerido
+      </div>
+    </div>
+
+    <!-- Moneda -->
+    <div class="form-group">
+      <label for="moneda">Moneda *</label>
+      <select 
+        id="moneda" 
+        formControlName="moneda" 
+        class="form-control"
+        [class.is-invalid]="isFieldInvalid('moneda')">
+        <option value="">Seleccionar moneda</option>
+        <option *ngFor="let moneda of monedas" [value]="moneda.CurrencyCode">
+          {{moneda.Nombre}} ({{moneda.CurrencyCode}})
+        </option>
+      </select>
+      <div class="invalid-feedback" *ngIf="isFieldInvalid('moneda')">
+        La moneda es requerida
+      </div>
+    </div>
+
+    <!-- Contacto -->
+    <div class="form-group">
+      <label for="contacto">Contacto *</label>
+      <select 
+        id="contacto" 
+        formControlName="contacto" 
+        class="form-control"
+        [class.is-invalid]="isFieldInvalid('contacto')">
+        <option value="">Seleccionar contacto</option>
+        <option *ngFor="let contacto of contactos" [value]="contacto.Identificador1.Value">
+          {{contacto.Nombre1.Value}} - {{contacto.Identificador1.Value}}
+        </option>
+      </select>
+      <div class="invalid-feedback" *ngIf="isFieldInvalid('contacto')">
+        El contacto es requerido
+      </div>
+    </div>
+
+    <!-- Vendedor -->
+    <div class="form-group">
+      <label for="vendedor">Vendedor *</label>
+      <input 
+        type="text" 
+        id="vendedor" 
+        formControlName="vendedor" 
+        class="form-control"
+        [class.is-invalid]="isFieldInvalid('vendedor')">
+      <div class="invalid-feedback" *ngIf="isFieldInvalid('vendedor')">
+        El vendedor es requerido
+      </div>
+    </div>
+
+    <!-- Presupuestos -->
+    <div class="form-group">
+      <label for="presupuesto">Agregar Presupuesto</label>
+      <div class="input-with-button">
+        <select 
+          id="presupuesto" 
+          formControlName="presupuesto" 
+          class="form-control">
+          <option value="">Seleccionar presupuesto</option>
+          <option *ngFor="let presupuesto of presupuestos" [value]="presupuesto.Id">
+            Presupuesto #{{presupuesto.Id}} - {{presupuesto.Cliente}} - ${{presupuesto.Total}}
+          </option>
+        </select>
+        <button 
+          type="button" 
+          class="btn btn-add" 
+          (click)="agregarPresupuesto()"
+          [disabled]="!puedeAgregarPresupuesto()">
+          Agregar
+        </button>
+      </div>
+    </div>
+
+    <!-- Lista de presupuestos seleccionados -->
+    <div class="selected-items" *ngIf="presupuestosSeleccionados.length > 0">
+      <h4>Presupuestos Seleccionados:</h4>
+      <div class="selected-item" *ngFor="let presupuesto of presupuestosSeleccionados; let i = index">
+        <span>Presupuesto #{{presupuesto.Id}} - {{presupuesto.Cliente}} - ${{presupuesto.Total}}</span>
+        <button type="button" class="btn btn-remove" (click)="eliminarPresupuesto(i)">×</button>
+      </div>
+    </div>
+
+    <!-- Artículos -->
+    <div class="form-group">
+      <label for="articulo">Agregar Artículo</label>
+      <div class="input-with-button">
+        <select 
+          id="articulo" 
+          formControlName="articulo" 
+          class="form-control">
+          <option value="">Seleccionar artículo</option>
+          <option *ngFor="let articulo of articulos" [value]="articulo.Codigo">
+            {{articulo.Codigo}} - {{articulo.Nombre}}
+          </option>
+        </select>
+        <input 
+          type="number" 
+          formControlName="cantidadArticulo" 
+          class="form-control quantity-input"
+          placeholder="Cant."
+          min="1">
+        <input 
+          type="number" 
+          formControlName="precioUnitarioArticulo" 
+          class="form-control price-input"
+          placeholder="Precio Unit."
+          min="0.01"
+          step="0.01">
+        <button 
+          type="button" 
+          class="btn btn-add" 
+          (click)="agregarArticulo()"
+          [disabled]="!puedeAgregarArticulo()">
+          Agregar
+        </button>
+      </div>
+    </div>
+
+    <!-- Lista de artículos seleccionados -->
+    <div class="selected-items" *ngIf="articulosSeleccionados.length > 0">
+      <h4>Artículos Seleccionados:</h4>
+      <div class="selected-item" *ngFor="let articulo of articulosSeleccionados; let i = index">
+        <span>{{articulo.Articulo.Codigo}} - {{articulo.Articulo.Nombre}} (Cant: {{articulo.Cantidad}}, Precio: ${{articulo.PrecioUnitario}})</span>
+        <button type="button" class="btn btn-remove" (click)="eliminarArticulo(i)">×</button>
+      </div>
+    </div>
+
+    <!-- Precio final -->
+    <div class="form-group">
+      <label for="precioFinal">Precio Final *</label>
+      <input 
+        type="number" 
+        id="precioFinal" 
+        formControlName="precioFinal" 
+        class="form-control"
+        min="0.01"
+        step="0.01"
+        [class.is-invalid]="isFieldInvalid('precioFinal')">
+      <div class="invalid-feedback" *ngIf="isFieldInvalid('precioFinal')">
+        El precio final es requerido y debe ser mayor a 0
+      </div>
+    </div>
+
+    <!-- Comentario -->
+    <div class="form-group">
+      <label for="comentario">Comentario</label>
+      <textarea 
+        id="comentario" 
+        formControlName="comentario" 
+        class="form-control" 
+        rows="3"
+        placeholder="Observaciones generales">
+      </textarea>
+    </div>
+
+    <!-- Botones -->
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">
+        Facturar
+      </button>
+      <button type="button" class="btn btn-secondary" (click)="cancelar()">
+        Cancelar
+      </button>
+    </div>
+  </form>
+
+  <!-- Resultado -->
+  <div class="factura-resultado" *ngIf="facturaGenerada">
+    <h3>Factura Generada</h3>
+    <pre>{{facturaGenerada | json}}</pre>
+  </div>
+</div>

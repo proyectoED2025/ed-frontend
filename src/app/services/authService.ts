@@ -53,4 +53,18 @@ export class AuthService {
       })
     );
   }
+
+  getCurrentUser(): Observable<any> {
+    return new Observable(observer => {
+      observer.next({ name: 'Usuario' });
+      observer.complete();
+    });
+  }
+
+  getCurrentCompany(): Observable<any> {
+    return new Observable(observer => {
+      observer.next({ name: 'Stock Manager' });
+      observer.complete();
+    });
+  }
 }

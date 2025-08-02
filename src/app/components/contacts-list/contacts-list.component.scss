@@ -2,6 +2,7 @@
   padding: 24px;
   max-width: 1200px;
   margin: 0 auto;
+  background-color: transparent;
 }
 
 .search-section {
@@ -16,10 +17,11 @@
 }
 
 .search-controls {
-  background-color: #f8f9fa;
+  background-color: #ffffff;
   padding: 20px;
-  border-radius: 8px;
-  border: 1px solid #dee2e6;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.02);
 }
 
 .search-input-group {
@@ -104,8 +106,10 @@
 }
 
 .data-table-section {
-  background-color: white;
-  border-radius: 8px;
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.02);
   overflow: hidden;
   position: relative;
 }
@@ -143,13 +147,13 @@
 }
 
 .modal-content {
-  background-color: white;
-  border-radius: 8px;
+  background-color: #ffffff;
+  border-radius: 12px;
   min-width: 500px;
   max-width: 90vw;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
 }
 
 .modal-header {

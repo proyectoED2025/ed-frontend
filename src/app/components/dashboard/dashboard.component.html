@@ -5,7 +5,7 @@
       <p class="company-name">{{ currentCompany }}</p>
     </div>
     <div class="date-section">
-      <p class="current-date">{{ new Date() | date:'fullDate':'es-AR' }}</p>
+      <p class="current-date">{{ currentDate | date:'fullDate':'es-AR' }}</p>
     </div>
   </div>
 
@@ -49,20 +49,25 @@
           <span class="action-icon">🛍️</span>
           <span class="action-text">Ver Productos</span>
         </a>
-        
+
         <a routerLink="/sales" class="action-button">
           <span class="action-icon">💳</span>
           <span class="action-text">Ver Ventas</span>
         </a>
-        
+
         <a routerLink="/stock-movements" class="action-button">
           <span class="action-icon">📋</span>
           <span class="action-text">Movimientos</span>
         </a>
-        
+
         <a routerLink="/contacts" class="action-button">
           <span class="action-icon">👥</span>
           <span class="action-text">Contactos</span>
+        </a>
+
+        <a routerLink="/presupuestar" class="action-button presupuestar-button">
+          <span class="action-icon">💰</span>
+          <span class="action-text">Presupuestar</span>
         </a>
       </div>
     </div>
