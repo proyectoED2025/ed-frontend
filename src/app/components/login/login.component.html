@@ -4,35 +4,19 @@
 
     <form (ngSubmit)="onSubmit()" #loginForm="ngForm" novalidate>
       <div class="mb-3">
-        <label for="rut" class="form-label">RUT</label>
+        <label for="userName" class="form-label">Usuario</label>
         <input
           type="text"
-          id="rut"
-          name="rut"
+          id="userName"
+          name="userName"
           class="form-control"
-          [(ngModel)]="data.rut"
+          [(ngModel)]="data.userName"
           required
-          [ngClass]="{ 'is-invalid': submitted && rutInvalido }"
+          #userNameInput="ngModel"
+          [ngClass]="{ 'is-invalid': submitted && userNameInput.invalid }"
         />
-        <div *ngIf="submitted && rutInvalido" class="invalid-feedback">
-          RUT inválido
-        </div>
-      </div>
-
-      <div class="mb-3">
-        <label for="email" class="form-label">Usuario (email)</label>
-        <input
-          type="email"
-          id="email"
-          name="email"
-          class="form-control"
-          [(ngModel)]="data.email"
-          required
-          #emailInput="ngModel"
-          [ngClass]="{ 'is-invalid': submitted && emailInput.invalid }"
-        />
-        <div *ngIf="submitted && emailInput.invalid" class="invalid-feedback">
-          Email inválido
+        <div *ngIf="submitted && userNameInput.invalid" class="invalid-feedback">
+          Usuario requerido
         </div>
       </div>
 
@@ -52,7 +36,7 @@
         <button
           type="submit"
           class="btn btn-primary px-4 login-btn"
-          [disabled]="loginForm.invalid || rutInvalido"
+          [disabled]="loginForm.invalid"
         >
           Ingresar
         </button>
@@ -62,5 +46,9 @@
         {{ error }}
       </div>
     </form>
+    
+    <div class="text-center mt-3">
+      <small>¿No tienes cuenta? <a routerLink="/register" class="text-primary">Regístrate aquí</a></small>
+    </div>
   </div>
 </div>

@@ -1,10 +1,41 @@
 <div class="products-list-container">
-  <div class="search-section">
+  <!-- Header Section -->
+  <div class="header-section">
     <button class="btn btn-secondary volver-button" (click)="volverAlDashboard()">
       ← Volver
     </button>
     <h2 class="page-title">Lista de Productos</h2>
-    
+
+    <div class="action-buttons">
+      <button class="btn btn-primary" (click)="showCreateForm = true; clearMessages()">
+        + Crear Producto
+      </button>
+      <button class="btn btn-info" (click)="onViewMovements()">
+        Ver Movimientos
+      </button>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  <div *ngIf="success" class="alert alert-success alert-dismissible">
+    {{ success }}
+    <button type="button" class="btn-close" (click)="success = null"></button>
+  </div>
+
+  <div *ngIf="error" class="alert alert-danger alert-dismissible">
+    {{ error }}
+    <button type="button" class="btn-close" (click)="error = null"></button>
+  </div>
+
+  <!-- Loading Spinner -->
+  <div *ngIf="loading" class="text-center my-4">
+    <div class="spinner-border" role="status">
+      <span class="visually-hidden">Cargando...</span>
+    </div>
+  </div>
+
+  <!-- Search Section -->
+  <div class="search-section" *ngIf="!loading">
     <div class="search-controls">
       <div class="search-input-group">
         <input
@@ -13,14 +44,14 @@
           placeholder="Buscar productos..."
           [(ngModel)]="searchText"
           (keyup.enter)="onSearch()">
-        
+
         <button
           type="button"
           class="search-button"
           (click)="onSearch()">
           Buscar
         </button>
-        
+
         <button
           type="button"
           class="clear-button"
@@ -32,12 +63,162 @@
     </div>
   </div>
 
-  <div class="data-table-section">
-    <app-data-table
-      [columns]="columns"
-      [data]="filteredProducts"
-      [filters]="''"
-      [buttons]="[]">
-    </app-data-table>
+  <!-- Products Table -->
+  <div class="data-table-section" *ngIf="!loading && !showCreateForm && !showEditForm && !showSupplies && !showMovements">
+    <div class="products-grid">
+      <div class="product-card" *ngFor="let product of filteredProducts">
+        <div class="product-info">
+          <h5>{{ product.name }}</h5>
+          <p><strong>Código:</strong> {{ product.codeProduct }}</p>
+          <p><strong>Descripción:</strong> {{ product.description }}</p>
+          <p><strong>Precio:</strong> ${{ product.price }}</p>
+          <p><strong>Categoría:</strong> {{ product.category }}</p>
+          <p><strong>Stock:</strong> {{ product.stock }}</p>
+        </div>
+        <div class="product-actions">
+          <button class="btn btn-sm btn-outline-primary"
+                  (click)="onSelectProduct(product); showEditForm = true">
+            ✏️ Editar
+          </button>
+          <button class="btn btn-sm btn-outline-info"
+                  (click)="onViewSupplies(product)">
+            📦 Insumos
+          </button>
+          <input type="file"
+                 class="d-none"
+                 #imageInput
+                 accept="image/*"
+                 (change)="selectedProduct = product; onUpdateImage($event)">
+          <button class="btn btn-sm btn-outline-secondary"
+                  (click)="selectedProduct = product; imageInput.click()">
+            🖼️ Imagen
+          </button>
+          <button class="btn btn-sm btn-outline-danger"
+                  (click)="onDeleteProduct(product.codeProduct)">
+            🗑️ Eliminar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create Product Form -->
+  <div class="form-section" *ngIf="showCreateForm && !loading">
+    <h3>Crear Nuevo Producto</h3>
+    <form [formGroup]="createProductForm" (ngSubmit)="onCreateProduct()">
+      <div class="row">
+        <div class="col-md-6">
+          <div class="mb-3">
+            <label class="form-label">Código del Producto *</label>
+            <input type="text" class="form-control" formControlName="codeProduct">
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="mb-3">
+            <label class="form-label">Nombre *</label>
+            <input type="text" class="form-control" formControlName="name">
+          </div>
+        </div>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Descripción *</label>
+        <textarea class="form-control" formControlName="description" rows="3"></textarea>
+      </div>
+      <div class="row">
+        <div class="col-md-6">
+          <div class="mb-3">
+            <label class="form-label">Precio *</label>
+            <input type="number" class="form-control" formControlName="price" step="0.01">
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="mb-3">
+            <label class="form-label">Categoría *</label>
+            <input type="text" class="form-control" formControlName="category">
+          </div>
+        </div>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Imagen</label>
+        <input type="file" class="form-control" accept="image/*" (change)="onFileSelected($event)">
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary" [disabled]="!createProductForm.valid">
+          Crear Producto
+        </button>
+        <button type="button" class="btn btn-secondary ms-2" (click)="showCreateForm = false">
+          Cancelar
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Edit Description Form -->
+  <div class="form-section" *ngIf="showEditForm && selectedProduct && !loading">
+    <h3>Editar Descripción - {{ selectedProduct.name }}</h3>
+    <form [formGroup]="editDescriptionForm" (ngSubmit)="onUpdateDescription()">
+      <div class="mb-3">
+        <label class="form-label">Descripción *</label>
+        <textarea class="form-control" formControlName="description" rows="4"></textarea>
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary" [disabled]="!editDescriptionForm.valid">
+          Actualizar Descripción
+        </button>
+        <button type="button" class="btn btn-secondary ms-2" (click)="showEditForm = false">
+          Cancelar
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Supplies Section -->
+  <div class="supplies-section" *ngIf="showSupplies && selectedProduct && !loading">
+    <h3>Insumos de {{ selectedProduct.name }}</h3>
+    <div *ngIf="supplies.length === 0" class="alert alert-info">
+      No hay insumos registrados para este producto.
+    </div>
+    <div class="supplies-grid" *ngIf="supplies.length > 0">
+      <div class="supply-card" *ngFor="let supply of supplies">
+        <h6>{{ supply.name }}</h6>
+        <p><strong>Cantidad:</strong> {{ supply.quantity }} {{ supply.unit }}</p>
+      </div>
+    </div>
+    <button class="btn btn-secondary mt-3" (click)="showSupplies = false">
+      Volver a Productos
+    </button>
+  </div>
+
+  <!-- Movements Section -->
+  <div class="movements-section" *ngIf="showMovements && !loading">
+    <h3>Movimientos de Productos</h3>
+    <div *ngIf="movements.length === 0" class="alert alert-info">
+      No hay movimientos registrados.
+    </div>
+    <div class="movements-table" *ngIf="movements.length > 0">
+      <table class="table table-striped">
+        <thead>
+          <tr>
+            <th>Código Producto</th>
+            <th>Tipo Movimiento</th>
+            <th>Cantidad</th>
+            <th>Fecha</th>
+            <th>Descripción</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let movement of movements">
+            <td>{{ movement.productCode }}</td>
+            <td>{{ movement.movementType }}</td>
+            <td>{{ movement.quantity }}</td>
+            <td>{{ movement.date | date:'short' }}</td>
+            <td>{{ movement.description }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <button class="btn btn-secondary mt-3" (click)="showMovements = false">
+      Volver a Productos
+    </button>
   </div>
 </div>

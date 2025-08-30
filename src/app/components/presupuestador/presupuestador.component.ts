@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ContactosService } from '../../services/contactos.service';
+import { PresupuestoService } from '../../services/presupuesto.service';
 
 @Component({
   selector: 'app-presupuestador',
@@ -18,6 +19,9 @@ export class PresupuestadorComponent implements OnInit {
   filteredContactos: any[] = [];
   selectedContacto: any = null;
   showContactDropdown: boolean = false;
+  error: string | null = null;
+  success: string | null = null;
+  loading: boolean = false;
 
   tiposProducto = [
     { value: '', label: 'Seleccionar tipo' },
@@ -40,7 +44,8 @@ export class PresupuestadorComponent implements OnInit {
   constructor(
     private formBuilder: FormBuilder,
     private router: Router,
-    private contactosService: ContactosService
+    private contactosService: ContactosService,
+    private presupuestoService: PresupuestoService
   ) {
     this.presupuestoForm = this.formBuilder.group({
       tipoProducto: ['', Validators.required],
@@ -49,7 +54,8 @@ export class PresupuestadorComponent implements OnInit {
       espesor: ['', [Validators.required, Validators.min(1)]],
       ancho: ['', [Validators.required, Validators.min(1)]],
       alto: ['', [Validators.required, Validators.min(1)]],
-      color: ['', Validators.required]
+      color: ['', Validators.required],
+      cantidad: [1, [Validators.required, Validators.min(1)]]
     });
   }
 
@@ -141,33 +147,56 @@ export class PresupuestadorComponent implements OnInit {
 
   grabarPresupuesto() {
     if (this.presupuestoForm.valid && this.selectedContacto) {
-      const presupuestoData = {
-        ...this.presupuestoForm.value,
-        contacto: this.selectedContacto,
-        fecha: new Date().toISOString(),
-        id: Date.now() // Temporary ID for testing
+      this.loading = true;
+      this.error = null;
+      this.success = null;
+
+      const formValues = this.presupuestoForm.value;
+      
+      const budgetDto = {
+        Cliente: {
+          CustomerId: this.selectedContacto.id,
+          Nombre: this.selectedContacto.nombre,
+          Identificador: this.selectedContacto.identificador || '',
+          TipoDocumento: this.selectedContacto.tipoDocumento || 'CI',
+          Email: this.selectedContacto.email,
+          Telefono: this.selectedContacto.telefono,
+          DireccionFiscal: this.selectedContacto.direccion || ''
+        },
+        Productos: [{
+          Name: `${formValues.tipoProducto} - ${formValues.serie}`,
+          Width: formValues.ancho,
+          Heigth: formValues.alto,
+          Color: formValues.color,
+          amount: formValues.cantidad,
+          GlassThickness: formValues.espesor,
+          GlassType: formValues.tipoVidrio,
+          TypeProduct: formValues.tipoProducto,
+          Serie: formValues.serie
+        }]
       };
 
-      console.log('Presupuesto creado:', presupuestoData);
-      
-      // TODO: Aquí se enviará al backend
-      // this.presupuestoService.createPresupuesto(presupuestoData).subscribe(...)
-      
-      alert('Presupuesto creado correctamente. Ver consola para detalles.');
-      
-      // Reset form after successful creation
-      this.presupuestoForm.reset();
-      this.clearContacto();
+      this.presupuestoService.crearPresupuesto(budgetDto).subscribe({
+        next: (response) => {
+          this.loading = false;
+          this.success = 'Presupuesto creado correctamente';
+          this.presupuestoForm.reset();
+          this.clearContacto();
+        },
+        error: (err) => {
+          this.loading = false;
+          this.error = typeof err === 'string' ? err : 'Error al crear presupuesto';
+        }
+      });
     } else {
-      // Mark all fields as touched to show validation errors
       Object.keys(this.presupuestoForm.controls).forEach(key => {
         this.presupuestoForm.get(key)?.markAsTouched();
       });
       
       if (!this.selectedContacto) {
-        alert('Por favor, seleccione un contacto');
+        this.error = 'Por favor, seleccione un contacto';
       } else {
-        alert('Por favor, complete todos los campos requeridos');
+        this.error = 'Por favor, complete todos los campos requeridos';
       }
     }
   }

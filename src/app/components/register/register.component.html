@@ -1,0 +1,120 @@
+<div class="container-fluid bg-light min-vh-100 d-flex justify-content-center align-items-center">
+  <div class="card shadow p-4" style="max-width: 500px; width: 100%;">
+    <h4 class="text-center mb-4">Registro de Usuario</h4>
+
+    <form (ngSubmit)="onSubmit()" #registerForm="ngForm" novalidate>
+      <div class="mb-3">
+        <label for="name" class="form-label">Nombre completo</label>
+        <input
+          type="text"
+          id="name"
+          name="name"
+          class="form-control"
+          [(ngModel)]="data.name"
+          required
+          maxlength="100"
+          #nameInput="ngModel"
+          [ngClass]="{ 'is-invalid': submitted && nameInput.invalid }"
+        />
+        <div *ngIf="submitted && nameInput.invalid" class="invalid-feedback">
+          Nombre requerido (máximo 100 caracteres)
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label for="userName" class="form-label">Usuario</label>
+        <input
+          type="text"
+          id="userName"
+          name="userName"
+          class="form-control"
+          [(ngModel)]="data.userName"
+          required
+          maxlength="100"
+          #userNameInput="ngModel"
+          [ngClass]="{ 'is-invalid': submitted && userNameInput.invalid }"
+        />
+        <div *ngIf="submitted && userNameInput.invalid" class="invalid-feedback">
+          Usuario requerido (máximo 100 caracteres)
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label for="userEmail" class="form-label">Email</label>
+        <input
+          type="email"
+          id="userEmail"
+          name="userEmail"
+          class="form-control"
+          [(ngModel)]="data.userEmail"
+          required
+          #emailInput="ngModel"
+          [ngClass]="{ 'is-invalid': submitted && (!isEmailValid() || emailInput.invalid) }"
+        />
+        <div *ngIf="submitted && (!isEmailValid() || emailInput.invalid)" class="invalid-feedback">
+          Email válido requerido
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label for="phoneNumber" class="form-label">Teléfono</label>
+        <input
+          type="tel"
+          id="phoneNumber"
+          name="phoneNumber"
+          class="form-control"
+          [(ngModel)]="data.phoneNumber"
+          required
+          placeholder="091234567"
+          #phoneInput="ngModel"
+          [ngClass]="{ 'is-invalid': submitted && (!isPhoneValid() || phoneInput.invalid) }"
+        />
+        <div *ngIf="submitted && (!isPhoneValid() || phoneInput.invalid)" class="invalid-feedback">
+          Teléfono debe tener formato 09xxxxxxx
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label for="password" class="form-label">Contraseña</label>
+        <input
+          type="password"
+          id="password"
+          name="password"
+          class="form-control"
+          [(ngModel)]="data.password"
+          required
+          #passwordInput="ngModel"
+          [ngClass]="{ 'is-invalid': submitted && (!isPasswordValid() || passwordInput.invalid) }"
+        />
+        <div *ngIf="submitted && (!isPasswordValid() || passwordInput.invalid)" class="invalid-feedback">
+          Contraseña debe tener entre 6 y 10 caracteres
+        </div>
+      </div>
+
+      <div class="text-center mt-3">
+        <button
+          type="submit"
+          class="btn btn-primary px-4 me-2"
+          [disabled]="!isFormValid()"
+        >
+          Registrarse
+        </button>
+        <button
+          type="button"
+          class="btn btn-outline-secondary px-4"
+          (click)="goToLogin()"
+        >
+          Volver al Login
+        </button>
+      </div>
+
+      <div *ngIf="success" class="text-success text-center mt-3">
+        {{ success }}
+      </div>
+
+      <div *ngIf="error" class="text-danger text-center mt-3">
+        {{ error }}
+      </div>
+    </form>
+  </div>
+</div>

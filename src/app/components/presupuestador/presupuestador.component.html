@@ -156,9 +156,9 @@
           </div>
         </div>
 
-        <!-- Tercera fila - Color (centrado) -->
+        <!-- Tercera fila -->
         <div class="form-row">
-          <div class="form-group form-group-centered">
+          <div class="form-group">
             <label for="color">Color *</label>
             <input 
               type="text" 
@@ -171,6 +171,30 @@
               {{ getFieldError('color') }}
             </div>
           </div>
+          
+          <div class="form-group">
+            <label for="cantidad">Cantidad *</label>
+            <input 
+              type="number" 
+              id="cantidad" 
+              class="form-control"
+              formControlName="cantidad"
+              placeholder="1"
+              min="1"
+              [class.is-invalid]="isFieldInvalid('cantidad')">
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('cantidad')">
+              {{ getFieldError('cantidad') }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Mensajes -->
+        <div *ngIf="success" class="alert alert-success">
+          {{ success }}
+        </div>
+        
+        <div *ngIf="error" class="alert alert-danger">
+          {{ error }}
         </div>
 
         <!-- Botón Grabar -->
@@ -178,8 +202,10 @@
           <button 
             type="button" 
             class="btn btn-primary grabar-button"
+            [disabled]="loading"
             (click)="grabarPresupuesto()">
-            💾 Grabar Presupuesto
+            <span *ngIf="loading" class="spinner-border spinner-border-sm me-2"></span>
+            {{ loading ? 'Guardando...' : '💾 Grabar Presupuesto' }}
           </button>
         </div>
       </form>
