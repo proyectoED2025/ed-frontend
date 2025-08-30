@@ -14,7 +14,7 @@ import { Product, ProductDto, UpdateDescriptionProductDto, Supply, ProductMoveme
   styleUrls: ['./products-list.component.scss']
 })
 export class ProductsListComponent implements OnInit {
-  searchText: string = '';
+  query: string = '';
   products: Product[] = [];
   filteredProducts: Product[] = [];
   selectedProduct: Product | null = null;
@@ -23,6 +23,9 @@ export class ProductsListComponent implements OnInit {
 
   // UI States
   loading = false;
+  isLoading = false;
+  hasError = false;
+  errorMsg: string | null = null;
   error: string | null = null;
   success: string | null = null;
   showCreateForm = false;
@@ -30,9 +33,16 @@ export class ProductsListComponent implements OnInit {
   showSupplies = false;
   showMovements = false;
 
+  // Pagination
+  pageIndex = 0;
+  pageSize = 10;
+  total = 0;
+
   // Forms
   createProductForm: FormGroup;
   editDescriptionForm: FormGroup;
+
+  Math = Math;
 
   columns: DataTableColumn[] = [
     { key: 'codeProduct', label: 'Código' },
@@ -68,25 +78,29 @@ export class ProductsListComponent implements OnInit {
 
   loadProducts() {
     this.loading = true;
+    this.isLoading = true;
     this.error = null;
 
     this.commonService.obtenerProductos().subscribe({
       next: (data) => {
         this.products = data;
         this.filteredProducts = [...data];
+        this.total = data.length;
         this.loading = false;
+        this.isLoading = false;
       },
       error: (error) => {
         console.error('Error loading products:', error);
         this.error = typeof error === 'string' ? error : 'Error al cargar productos';
         this.loading = false;
+        this.isLoading = false;
 
         // Load test data when API fails
         this.products = [
           {
             codeProduct: 'PROD001',
             name: 'Notebook Dell Inspiron 15',
-            description: 'Notebook para uso profesional',
+            description: 'Notebook para uso profesional con procesador Intel Core i5, 8GB RAM y disco SSD de 256GB',
             price: 785000.00,
             category: 'Informática',
             stock: 12
@@ -94,34 +108,135 @@ export class ProductsListComponent implements OnInit {
           {
             codeProduct: 'PROD002',
             name: 'Smartphone Samsung Galaxy A54',
-            description: 'Smartphone con cámara avanzada',
+            description: 'Smartphone con cámara avanzada de 50MP, pantalla AMOLED de 6.4 pulgadas y batería de 5000mAh',
             price: 320000.00,
             category: 'Telefonía',
             stock: 25
           }
         ];
         this.filteredProducts = [...this.products];
+        this.total = this.products.length;
       }
     });
   }
 
-  onSearch() {
-    if (!this.searchText.trim()) {
+  buscar() {
+    if (!this.query.trim()) {
       this.filteredProducts = [...this.products];
+      this.total = this.products.length;
+      this.pageIndex = 0;
       return;
     }
 
-    const searchLower = this.searchText.toLowerCase();
+    const searchLower = this.query.toLowerCase();
     this.filteredProducts = this.products.filter(product =>
       Object.values(product).some(value =>
         String(value).toLowerCase().includes(searchLower)
       )
     );
+    this.total = this.filteredProducts.length;
+    this.pageIndex = 0;
+  }
+
+  limpiar() {
+    this.query = '';
+    this.filteredProducts = [...this.products];
+    this.total = this.products.length;
+    this.pageIndex = 0;
+  }
+
+  onEditar(item: Product) {
+    this.selectedProduct = item;
+    this.editDescriptionForm.patchValue({ description: item.description });
+    this.showEditForm = true;
+  }
+
+  onVerInsumos(item: Product) {
+    this.selectedProduct = item;
+    this.loading = true;
+    this.error = null;
+
+    this.commonService.obtenerInsumosDelProducto(item.codeProduct).subscribe({
+      next: (supplies) => {
+        this.supplies = supplies;
+        this.showSupplies = true;
+        this.loading = false;
+      },
+      error: (error) => {
+        this.error = typeof error === 'string' ? error : 'Error al cargar insumos';
+        this.loading = false;
+        // TODO: Handle supplies endpoint when available
+        this.supplies = [];
+        this.showSupplies = true;
+      }
+    });
+  }
+
+  onCambiarImagen(item: Product) {
+    this.selectedProduct = item;
+    const fileInput = document.querySelector('#imageInput') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.click();
+    } else {
+      // Fallback: create temporary input
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.onchange = (event: any) => this.onUpdateImage(event);
+      input.click();
+    }
+  }
+
+  onEliminar(item: Product) {
+    if (window.confirm(`¿Está seguro de eliminar el producto "${item.name}"?`)) {
+      this.loading = true;
+      this.error = null;
+
+      const codigo = item.codeProduct;
+      this.commonService.eliminarProducto(codigo).subscribe({
+        next: () => {
+          this.success = 'Producto eliminado correctamente';
+          this.loading = false;
+          this.loadProducts();
+        },
+        error: (error) => {
+          this.error = typeof error === 'string' ? error : 'Error al eliminar producto';
+          this.loading = false;
+        }
+      });
+    }
+  }
+
+  // Pagination methods
+  previousPage() {
+    if (this.pageIndex > 0) {
+      this.pageIndex--;
+      // TODO: Implement server-side pagination when available
+    }
+  }
+
+  nextPage() {
+    if ((this.pageIndex + 1) * this.pageSize < this.total) {
+      this.pageIndex++;
+      // TODO: Implement server-side pagination when available
+    }
+  }
+
+  // Keep existing methods for backward compatibility
+  get searchText() {
+    return this.query;
+  }
+
+  set searchText(value: string) {
+    this.query = value;
+  }
+
+  onSearch() {
+    this.buscar();
   }
 
   onClearSearch() {
-    this.searchText = '';
-    this.filteredProducts = [...this.products];
+    this.limpiar();
   }
 
   // CRUD Operations
@@ -228,21 +343,7 @@ export class ProductsListComponent implements OnInit {
   }
 
   onViewSupplies(product: Product) {
-    this.selectedProduct = product;
-    this.loading = true;
-    this.error = null;
-
-    this.commonService.obtenerInsumosDelProducto(product.codeProduct).subscribe({
-      next: (supplies) => {
-        this.supplies = supplies;
-        this.showSupplies = true;
-        this.loading = false;
-      },
-      error: (error) => {
-        this.error = typeof error === 'string' ? error : 'Error al cargar insumos';
-        this.loading = false;
-      }
-    });
+    this.onVerInsumos(product);
   }
 
   onViewMovements() {

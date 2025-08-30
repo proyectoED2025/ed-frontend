@@ -27,36 +27,29 @@
     <button type="button" class="btn-close" (click)="error = null"></button>
   </div>
 
-  <!-- Loading Spinner -->
-  <div *ngIf="loading" class="text-center my-4">
-    <div class="spinner-border" role="status">
-      <span class="visually-hidden">Cargando...</span>
-    </div>
-  </div>
-
   <!-- Search Section -->
-  <div class="search-section" *ngIf="!loading">
-    <div class="search-controls">
+  <div class="search-section" *ngIf="!loading && !showCreateForm && !showEditForm && !showSupplies && !showMovements">
+    <div class="search-card">
       <div class="search-input-group">
         <input
           type="text"
           class="search-input"
           placeholder="Buscar productos..."
-          [(ngModel)]="searchText"
-          (keyup.enter)="onSearch()">
+          [(ngModel)]="query"
+          (keyup.enter)="buscar()">
 
         <button
           type="button"
           class="search-button"
-          (click)="onSearch()">
+          (click)="buscar()">
           Buscar
         </button>
 
         <button
           type="button"
           class="clear-button"
-          (click)="onClearSearch()"
-          [disabled]="!searchText">
+          (click)="limpiar()"
+          [disabled]="!query">
           Limpiar
         </button>
       </div>
@@ -64,41 +57,119 @@
   </div>
 
   <!-- Products Table -->
-  <div class="data-table-section" *ngIf="!loading && !showCreateForm && !showEditForm && !showSupplies && !showMovements">
-    <div class="products-grid">
-      <div class="product-card" *ngFor="let product of filteredProducts">
-        <div class="product-info">
-          <h5>{{ product.name }}</h5>
-          <p><strong>Código:</strong> {{ product.codeProduct }}</p>
-          <p><strong>Descripción:</strong> {{ product.description }}</p>
-          <p><strong>Precio:</strong> ${{ product.price }}</p>
-          <p><strong>Categoría:</strong> {{ product.category }}</p>
-          <p><strong>Stock:</strong> {{ product.stock }}</p>
+  <div class="table-section" *ngIf="!loading && !showCreateForm && !showEditForm && !showSupplies && !showMovements">
+    <div class="table-card">
+      <div class="table-responsive">
+        <table class="products-table">
+          <thead>
+            <tr>
+              <th scope="col">Código</th>
+              <th scope="col">Nombre</th>
+              <th scope="col" class="description-col">Descripción</th>
+              <th scope="col" class="actions-col">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Loading State -->
+            <tr *ngIf="isLoading" class="loading-row">
+              <td colspan="4" class="text-center">
+                <div class="spinner-border spinner-border-sm" role="status">
+                  <span class="visually-hidden">Cargando...</span>
+                </div>
+                <span class="ms-2">Cargando productos...</span>
+              </td>
+            </tr>
+
+            <!-- Empty State -->
+            <tr *ngIf="!isLoading && filteredProducts.length === 0" class="empty-row">
+              <td colspan="4" class="text-center">
+                <div class="empty-state">
+                  <i class="fas fa-box-open"></i>
+                  <p>No se encontraron productos</p>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Data Rows -->
+            <tr *ngFor="let product of filteredProducts" class="data-row" role="row">
+              <td>{{ product.codeProduct  }}</td>
+              <td>{{ product.name  }}</td>
+              <td class="description-cell"
+                  [title]="product.description">
+                <span class="description-text">{{ product.description }}</span>
+              </td>
+              <td class="actions-cell">
+                <div class="action-buttons">
+                  <button
+                    class="btn-action btn-edit"
+                    (click)="onEditar(product)"
+                    title="Editar producto"
+                    >
+                    <i class="fas fa-edit"></i>
+                    <span class="btn-text">Editar</span>
+                  </button>
+
+                  <button
+                    class="btn-action btn-supplies"
+                    (click)="onVerInsumos(product)"
+                    title="Ver insumos"
+                   >
+                    <i class="fas fa-boxes"></i>
+                    <span class="btn-text">Insumos</span>
+                  </button>
+
+                  <button
+                    class="btn-action btn-image"
+                    (click)="onCambiarImagen(product)"
+                    title="Cambiar imagen"
+                    >
+                    <i class="fas fa-image"></i>
+                    <span class="btn-text">Imagen</span>
+                  </button>
+
+                  <button
+                    class="btn-action btn-delete"
+                    (click)="onEliminar(product)"
+                    title="Eliminar producto"
+                   >
+                    <i class="fas fa-trash"></i>
+                    <span class="btn-text">Eliminar</span>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div class="pagination-section" *ngIf="!isLoading && filteredProducts.length > 0">
+        <div class="pagination-info">
+          Mostrando {{ (pageIndex * pageSize) + 1 }} - {{ Math.min((pageIndex + 1) * pageSize, total) }} de {{ total }} productos
         </div>
-        <div class="product-actions">
-          <button class="btn btn-sm btn-outline-primary"
-                  (click)="onSelectProduct(product); showEditForm = true">
-            ✏️ Editar
+        <div class="pagination-controls">
+          <button
+            class="btn btn-sm btn-outline-secondary"
+            [disabled]="pageIndex === 0"
+            (click)="previousPage()">
+            ← Anterior
           </button>
-          <button class="btn btn-sm btn-outline-info"
-                  (click)="onViewSupplies(product)">
-            📦 Insumos
-          </button>
-          <input type="file"
-                 class="d-none"
-                 #imageInput
-                 accept="image/*"
-                 (change)="selectedProduct = product; onUpdateImage($event)">
-          <button class="btn btn-sm btn-outline-secondary"
-                  (click)="selectedProduct = product; imageInput.click()">
-            🖼️ Imagen
-          </button>
-          <button class="btn btn-sm btn-outline-danger"
-                  (click)="onDeleteProduct(product.codeProduct)">
-            🗑️ Eliminar
+          <span class="page-indicator">{{ pageIndex + 1 }} / {{ Math.ceil(total / pageSize) }}</span>
+          <button
+            class="btn btn-sm btn-outline-secondary"
+            [disabled]="(pageIndex + 1) * pageSize >= total"
+            (click)="nextPage()">
+            Siguiente →
           </button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- Loading Spinner -->
+  <div *ngIf="loading" class="text-center my-4">
+    <div class="spinner-border" role="status">
+      <span class="visually-hidden">Cargando...</span>
     </div>
   </div>
 
@@ -221,4 +292,11 @@
       Volver a Productos
     </button>
   </div>
+
+  <!-- Hidden file input for image changes -->
+  <input type="file"
+         class="d-none"
+         #imageInput
+         accept="image/*"
+         (change)="onUpdateImage($event)">
 </div>
