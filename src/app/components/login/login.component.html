@@ -22,14 +22,42 @@
 
       <div class="mb-3">
         <label for="password" class="form-label">Contraseña</label>
+        <div class="input-group">
+          <input
+            [type]="showPassword ? 'text' : 'password'"
+            id="password"
+            name="password"
+            class="form-control"
+            [(ngModel)]="data.password"
+            required
+            #passwordInput="ngModel"
+            [ngClass]="{ 'is-invalid': submitted && passwordInput.invalid }"
+          />
+          <button
+            type="button"
+            class="btn btn-outline-secondary password-toggle"
+            (click)="togglePasswordVisibility()"
+            tabindex="-1"
+          >
+            <i [class]="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+          </button>
+        </div>
+        <div *ngIf="submitted && passwordInput.invalid" class="invalid-feedback">
+          Contraseña requerida
+        </div>
+      </div>
+
+      <div class="mb-3 form-check">
         <input
-          type="password"
-          id="password"
-          name="password"
-          class="form-control"
-          [(ngModel)]="data.password"
-          required
+          type="checkbox"
+          id="rememberMe"
+          name="rememberMe"
+          class="form-check-input"
+          [(ngModel)]="rememberMe"
         />
+        <label class="form-check-label" for="rememberMe">
+          Recuérdame
+        </label>
       </div>
 
       <div class="text-center mt-3">

@@ -8,7 +8,7 @@ export function authInterceptor(request: HttpRequest<unknown>, next: HttpHandler
   const authService = inject(AuthService);
   const token = authService.getToken();
   
-  if (token) {
+  if (token && !request.url.includes('/loginUsuario') && !request.url.includes('/registroUsuario')) {
     request = request.clone({
       setHeaders: {
         Authorization: `Bearer ${token}`
@@ -18,7 +18,7 @@ export function authInterceptor(request: HttpRequest<unknown>, next: HttpHandler
 
   return next(request).pipe(
     catchError((error: HttpErrorResponse) => {
-      if (error.status === 401) {
+      if (error.status === 401 || error.status === 403) {
         authService.logout();
       }
       return throwError(() => error);

@@ -9,6 +9,7 @@ import { StockMovementsComponent } from './components/stock-movements/stock-move
 import { ContactsListComponent } from './components/contacts-list/contacts-list.component';
 import { PresupuestadorComponent } from './components/presupuestador/presupuestador.component';
 import { FacturadorComponent } from './components/facturador/facturador.component';
+import { InsumosComponent } from './components/insumos/insumos.component';
 import { authGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
@@ -23,5 +24,6 @@ export const routes: Routes = [
   { path: 'contacts', component: ContactsListComponent, canActivate: [authGuard] },
   { path: 'presupuestar', component: PresupuestadorComponent, canActivate: [authGuard] },
   { path: 'facturar', component: FacturadorComponent, canActivate: [authGuard] },
+  { path: 'insumos', component: InsumosComponent, canActivate: [authGuard] },
   { path: '**', redirectTo: '/dashboard' }
 ];

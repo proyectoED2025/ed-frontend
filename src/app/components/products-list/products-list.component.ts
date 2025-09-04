@@ -4,7 +4,7 @@ import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } 
 import { Router } from '@angular/router';
 import { DataTableComponent, DataTableColumn } from '../data-table/data-table.component';
 import { CommonService } from '../../services/common.service';
-import { Product, ProductDto, UpdateDescriptionProductDto, Supply, ProductMovement } from '../../models/product.interfaces';
+import { Product, ProductDto, ProductType, SupplyNecessaryDto, UpdateDescriptionProductDto, Supply, ProductMovement } from '../../models/product.interfaces';
 
 @Component({
   selector: 'app-products-list',
@@ -42,6 +42,21 @@ export class ProductsListComponent implements OnInit {
   createProductForm: FormGroup;
   editDescriptionForm: FormGroup;
 
+  // Insumos/Supplies management
+  productSupplies: SupplyNecessaryDto[] = [];
+
+  // Enum references
+  readonly ProductType = ProductType;
+  readonly productTypeOptions = [
+    { value: ProductType.Ventana, label: 'Ventana' },
+    { value: ProductType.Puerta, label: 'Puerta' },
+    { value: ProductType.Mampara, label: 'Mampara' },
+    { value: ProductType.Batiente, label: 'Batiente' },
+    { value: ProductType.Tabaquera, label: 'Tabaquera' },
+    { value: ProductType.Proyectante, label: 'Proyectante' },
+    { value: ProductType.Fijo, label: 'Fijo' }
+  ];
+
   Math = Math;
 
   columns: DataTableColumn[] = [
@@ -59,12 +74,13 @@ export class ProductsListComponent implements OnInit {
     private formBuilder: FormBuilder
   ) {
     this.createProductForm = this.formBuilder.group({
-      name: ['', Validators.required],
-      description: ['', Validators.required],
-      price: ['', [Validators.required, Validators.min(0)]],
-      category: ['', Validators.required],
       codeProduct: ['', Validators.required],
-      image: [null]
+      productName: ['', Validators.required],
+      productDescription: ['', Validators.required],
+      productCategory: [ProductType.Ventana, Validators.required],
+      productPrice: [0, [Validators.required, Validators.min(0.01)]],
+      image: [null],
+      imageUrl: ['']
     });
 
     this.editDescriptionForm = this.formBuilder.group({
@@ -83,8 +99,18 @@ export class ProductsListComponent implements OnInit {
 
     this.commonService.obtenerProductos().subscribe({
       next: (data) => {
-        this.products = data;
-        this.filteredProducts = [...data];
+      this.products = data.map((dto: ProductDto): Product => {
+        return {
+          codeProduct: dto.codeProduct,
+          name: dto.productName,
+          description: dto.productDescription,
+          price: dto.productPrice,
+          category: typeof dto.productCategory === 'number' ? ProductType[dto.productCategory] : dto.productCategory,
+          imageUrl: dto.imageUrl ?? undefined,
+          stock: dto.supplies?.length ?? 0
+        };
+      });
+        this.filteredProducts = [...this.products];
         this.total = data.length;
         this.loading = false;
         this.isLoading = false;
@@ -96,24 +122,7 @@ export class ProductsListComponent implements OnInit {
         this.isLoading = false;
 
         // Load test data when API fails
-        this.products = [
-          {
-            codeProduct: 'PROD001',
-            name: 'Notebook Dell Inspiron 15',
-            description: 'Notebook para uso profesional con procesador Intel Core i5, 8GB RAM y disco SSD de 256GB',
-            price: 785000.00,
-            category: 'Informática',
-            stock: 12
-          },
-          {
-            codeProduct: 'PROD002',
-            name: 'Smartphone Samsung Galaxy A54',
-            description: 'Smartphone con cámara avanzada de 50MP, pantalla AMOLED de 6.4 pulgadas y batería de 5000mAh',
-            price: 320000.00,
-            category: 'Telefonía',
-            stock: 25
-          }
-        ];
+        this.products = [];
         this.filteredProducts = [...this.products];
         this.total = this.products.length;
       }
@@ -239,31 +248,64 @@ export class ProductsListComponent implements OnInit {
     this.limpiar();
   }
 
+  // Supply management methods
+  addSupplyRow() {
+    this.productSupplies.push({ codeSupply: '', quantity: 1 });
+  }
+
+  removeSupplyRow(index: number) {
+    this.productSupplies.splice(index, 1);
+  }
+
+  isSupplyValid(supply: SupplyNecessaryDto): boolean {
+    return supply.codeSupply.trim() !== '' && supply.quantity > 0;
+  }
+
   // CRUD Operations
   onCreateProduct() {
     if (this.createProductForm.valid) {
       this.loading = true;
       this.error = null;
 
-      const formData = new FormData();
       const formValue = this.createProductForm.value;
 
-      formData.append('name', formValue.name);
-      formData.append('description', formValue.description);
-      formData.append('price', formValue.price.toString());
-      formData.append('category', formValue.category);
-      formData.append('codeProduct', formValue.codeProduct);
+      // Build ProductDto according to backend specification
+      const productDto: ProductDto = {
+        codeProduct: formValue.codeProduct,
+        productName: formValue.productName,
+        productDescription: formValue.productDescription,
+        productCategory: Number(formValue.productCategory),
+        productPrice: Number(formValue.productPrice),
+        Image: formValue.image || null,
+        imageUrl: formValue.imageUrl?.trim() || null,
+        supplies: this.productSupplies.filter(s => this.isSupplyValid(s))
+      };
 
-      if (formValue.image) {
-        formData.append('image', formValue.image);
+      // Convert to FormData for file upload
+      const formData = new FormData();
+      formData.append('codeProduct', productDto.codeProduct);
+      formData.append('productName', productDto.productName);
+      formData.append('productDescription', productDto.productDescription);
+      formData.append('productCategory', productDto.productCategory.toString());
+      formData.append('productPrice', productDto.productPrice.toString());
+
+      if (productDto.Image) {
+        formData.append('Image', productDto.Image);
       }
+
+      if (productDto.imageUrl) {
+        formData.append('imageUrl', productDto.imageUrl);
+      }
+
+      // Add supplies as JSON string or individual entries
+      formData.append('supplies', JSON.stringify(productDto.supplies));
 
       this.commonService.crearProducto(formData).subscribe({
         next: () => {
           this.success = 'Producto creado correctamente';
           this.loading = false;
           this.showCreateForm = false;
-          this.createProductForm.reset();
+          this.resetCreateForm();
           this.loadProducts();
         },
         error: (error) => {
@@ -272,6 +314,15 @@ export class ProductsListComponent implements OnInit {
         }
       });
     }
+  }
+
+  public resetCreateForm() {
+    this.createProductForm.reset();
+    this.createProductForm.patchValue({
+      productCategory: ProductType.Ventana,
+      productPrice: 0
+    });
+    this.productSupplies = [];
   }
 
   onUpdateDescription() {

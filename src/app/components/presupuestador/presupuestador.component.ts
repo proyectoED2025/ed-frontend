@@ -1,9 +1,21 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormArray } from '@angular/forms';
 import { Router } from '@angular/router';
-import { ContactosService } from '../../services/contactos.service';
+import { ContactosService, CustomerListItem } from '../../services/contactos.service';
 import { PresupuestoService } from '../../services/presupuesto.service';
+import {
+  BudgetCreateDto,
+  BudgetItem,
+  CustomerDto,
+  ProductBudgetDto,
+  GLASS_TYPES,
+  PRODUCT_TYPES,
+  SERIES,
+  GLASS_THICKNESS,
+  COLORS
+} from '../../models/budget.interfaces';
+import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
 
 @Component({
   selector: 'app-presupuestador',
@@ -12,34 +24,36 @@ import { PresupuestoService } from '../../services/presupuesto.service';
   templateUrl: './presupuestador.component.html',
   styleUrls: ['./presupuestador.component.scss']
 })
-export class PresupuestadorComponent implements OnInit {
-  presupuestoForm: FormGroup;
+export class PresupuestadorComponent implements OnInit, OnDestroy {
+  // Formularios y datos
   searchContacto: string = '';
-  contactos: any[] = [];
-  filteredContactos: any[] = [];
-  selectedContacto: any = null;
+  contactos: CustomerListItem[] = [];
+  filteredContactos: CustomerListItem[] = [];
+  selectedContacto: CustomerListItem | null = null;
   showContactDropdown: boolean = false;
+
+  budgetItems: BudgetItem[] = [];
+
+  // Estados
   error: string | null = null;
   success: string | null = null;
   loading: boolean = false;
+  loadingContactos: boolean = false;
+  isSubmitting: boolean = false;
 
-  tiposProducto = [
-    { value: '', label: 'Seleccionar tipo' },
-    { value: 'ventana', label: 'Ventana' },
-    { value: 'puerta', label: 'Puerta' },
-    { value: 'mamparas', label: 'Mamparas' },
-    { value: 'divisorias', label: 'Divisorias' },
-    { value: 'frentes', label: 'Frentes' }
-  ];
+  // Catálogos
+  glassTypes = GLASS_TYPES;
+  productTypes = PRODUCT_TYPES;
+  series = SERIES;
+  glassThickness = GLASS_THICKNESS;
+  colors = COLORS;
 
-  tiposVidrio = [
-    { value: '', label: 'Seleccionar vidrio' },
-    { value: 'simple', label: 'Vidrio Simple' },
-    { value: 'laminado', label: 'Vidrio Laminado' },
-    { value: 'templado', label: 'Vidrio Templado' },
-    { value: 'doble', label: 'Doble Vidriado Hermético (DVH)' },
-    { value: 'triple', label: 'Triple Vidriado' }
-  ];
+  // Control de búsqueda
+  private searchSubject = new Subject<string>();
+  private destroy$ = new Subject<void>();
+
+  // Resultado del último presupuesto
+  lastBudgetResult: any = null;
 
   constructor(
     private formBuilder: FormBuilder,
@@ -47,77 +61,101 @@ export class PresupuestadorComponent implements OnInit {
     private contactosService: ContactosService,
     private presupuestoService: PresupuestoService
   ) {
-    this.presupuestoForm = this.formBuilder.group({
-      tipoProducto: ['', Validators.required],
-      serie: ['', Validators.required],
-      tipoVidrio: ['', Validators.required],
-      espesor: ['', [Validators.required, Validators.min(1)]],
-      ancho: ['', [Validators.required, Validators.min(1)]],
-      alto: ['', [Validators.required, Validators.min(1)]],
-      color: ['', Validators.required],
-      cantidad: [1, [Validators.required, Validators.min(1)]]
+    // Configurar búsqueda con debounce
+    this.searchSubject.pipe(
+      debounceTime(300),
+      distinctUntilChanged(),
+      takeUntil(this.destroy$)
+    ).subscribe(searchTerm => {
+      this.performSearch(searchTerm);
     });
   }
 
   ngOnInit() {
     this.loadContactos();
-  }
+    this.loadDraft();
+    this.initializeEmptyItem();
 
-  loadContactos() {
-    this.contactosService.getContactos().subscribe({
-      next: (data) => {
-        this.contactos = data;
-      },
-      error: (error) => {
-        console.error('Error loading contacts:', error);
-        // Load test data when API fails
-        this.contactos = [
-          {
-            id: 1,
-            nombre: 'María González',
-            email: 'maria.gonzalez@techsolutions.com',
-            telefono: '+54 11 4567-8901',
-            empresa: 'Tech Solutions SA'
-          },
-          {
-            id: 2,
-            nombre: 'Carlos Rodríguez',
-            email: 'carlos.rodriguez@innovatech.com.ar',
-            telefono: '+54 9 2615 123-456',
-            empresa: 'InnovaTech Argentina'
-          },
-          {
-            id: 3,
-            nombre: 'Ana Fernández',
-            email: 'ana.fernandez@digitalcorp.com',
-            telefono: '+54 11 9876-5432',
-            empresa: 'Digital Corp'
-          }
-        ];
+    // Suscribirse al último presupuesto generado
+    this.presupuestoService.lastBudget$.pipe(
+      takeUntil(this.destroy$)
+    ).subscribe(budget => {
+      if (budget) {
+        this.lastBudgetResult = budget;
       }
     });
   }
 
-  onSearchContacto() {
-    if (!this.searchContacto.trim()) {
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
+    // Guardar borrador antes de salir
+    if (this.budgetItems.length > 0 || this.selectedContacto) {
+      this.saveDraft();
+    }
+  }
+
+  loadContactos() {
+    this.loadingContactos = true;
+    // Por ahora usar el servicio list con paginación para traer todos los contactos
+    this.contactosService.list({ page: 1, pageSize: 100 }).subscribe({
+      next: (response) => {
+        this.contactos = response.Items;
+        this.loadingContactos = false;
+      },
+      error: (error) => {
+        console.error('Error loading contacts:', error);
+        // Usar datos de prueba si el backend no está disponible
+        this.contactos = [];
+        this.loadingContactos = false;
+      }
+    });
+  }
+
+  initializeEmptyItem() {
+    const newItem: BudgetItem = {
+      id: this.generateId(),
+      Name: '',
+      Width: 0,
+      Heigth: 0,
+      Color: '',
+      amount: 1,
+      GlassThickness: '4',
+      GlassType: 1,  // Float por defecto
+      TypeProduct: 0,  // Ventana por defecto
+      Serie: 1,  // Serie 30 por defecto
+      isValid: false
+    };
+    this.budgetItems.push(newItem);
+  }
+
+  onSearchContacto(event: any) {
+    const value = event.target.value;
+    this.searchContacto = value;
+    this.searchSubject.next(value);
+  }
+
+  performSearch(searchTerm: string) {
+    if (!searchTerm.trim()) {
       this.filteredContactos = [];
       this.showContactDropdown = false;
       return;
     }
 
-    const searchLower = this.searchContacto.toLowerCase();
+    const searchLower = searchTerm.toLowerCase();
     this.filteredContactos = this.contactos.filter(contacto =>
-      contacto.nombre.toLowerCase().includes(searchLower) ||
-      contacto.empresa.toLowerCase().includes(searchLower) ||
-      contacto.email.toLowerCase().includes(searchLower)
+      contacto.Nombre.toLowerCase().includes(searchLower) ||
+      contacto.Identificador.toLowerCase().includes(searchLower) ||
+      contacto.Email.toLowerCase().includes(searchLower)
     );
     this.showContactDropdown = this.filteredContactos.length > 0;
   }
 
-  selectContacto(contacto: any) {
+  selectContacto(contacto: CustomerListItem) {
     this.selectedContacto = contacto;
-    this.searchContacto = contacto.nombre;
+    this.searchContacto = contacto.Nombre;
     this.showContactDropdown = false;
+    this.saveDraft();
   }
 
   clearContacto() {
@@ -127,81 +165,187 @@ export class PresupuestadorComponent implements OnInit {
     this.showContactDropdown = false;
   }
 
-  isFieldInvalid(fieldName: string): boolean {
-    const field = this.presupuestoForm.get(fieldName);
-    return !!(field && field.invalid && (field.dirty || field.touched));
+  // Gestión de items del presupuesto
+  addItem() {
+    const lastItem = this.budgetItems[this.budgetItems.length - 1];
+    if (!lastItem || this.isItemValid(lastItem)) {
+      this.initializeEmptyItem();
+      // Focus en el nombre del nuevo item
+      setTimeout(() => {
+        const inputs = document.querySelectorAll('.item-name-input');
+        const lastInput = inputs[inputs.length - 1] as HTMLInputElement;
+        if (lastInput) lastInput.focus();
+      }, 100);
+    }
   }
 
-  getFieldError(fieldName: string): string {
-    const field = this.presupuestoForm.get(fieldName);
-    if (field?.errors) {
-      if (field.errors['required']) {
-        return 'Este campo es requerido';
-      }
-      if (field.errors['min']) {
-        return 'El valor debe ser mayor a 0';
+  duplicateItem(index: number) {
+    const item = this.budgetItems[index];
+    const newItem: BudgetItem = {
+      ...item,
+      id: this.generateId(),
+      Name: item.Name + ' (copia)'
+    };
+    this.budgetItems.splice(index + 1, 0, newItem);
+    this.saveDraft();
+  }
+
+  removeItem(index: number) {
+    if (this.budgetItems.length > 1) {
+      this.budgetItems.splice(index, 1);
+      this.saveDraft();
+    }
+  }
+
+  onItemChange(item: BudgetItem) {
+    item.isValid = this.isItemValid(item);
+    this.saveDraft();
+  }
+
+  onItemKeyPress(event: KeyboardEvent, item: BudgetItem, fieldName: string) {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      const index = this.budgetItems.indexOf(item);
+      if (index === this.budgetItems.length - 1 && this.isItemValid(item)) {
+        this.addItem();
       }
     }
-    return '';
+  }
+
+  isItemValid(item: BudgetItem): boolean {
+    return !!(
+      item.Name && item.Name.trim() &&
+      item.Width > 0 &&
+      item.Heigth > 0 &&
+      item.Color && item.Color.trim() &&
+      item.amount > 0 &&
+      item.GlassThickness && Number(item.GlassThickness) > 0 &&
+      item.GlassType !== null && item.GlassType !== undefined &&
+      item.TypeProduct !== null && item.TypeProduct !== undefined &&
+      item.Serie !== null && item.Serie !== undefined
+    );
+  }
+
+  getValidItemsCount(): number {
+    return this.budgetItems.filter(item => this.isItemValid(item)).length;
+  }
+
+  getTotalAmount(): number {
+    return this.budgetItems
+      .filter(item => this.isItemValid(item))
+      .reduce((sum, item) => sum + (item.amount || 0), 0);
+  }
+
+  canSubmit(): boolean {
+    return !!(
+      this.selectedContacto &&
+      this.getValidItemsCount() > 0 &&
+      !this.isSubmitting
+    );
   }
 
   grabarPresupuesto() {
-    if (this.presupuestoForm.valid && this.selectedContacto) {
-      this.loading = true;
-      this.error = null;
-      this.success = null;
-
-      const formValues = this.presupuestoForm.value;
-      
-      const budgetDto = {
-        Cliente: {
-          CustomerId: this.selectedContacto.id,
-          Nombre: this.selectedContacto.nombre,
-          Identificador: this.selectedContacto.identificador || '',
-          TipoDocumento: this.selectedContacto.tipoDocumento || 'CI',
-          Email: this.selectedContacto.email,
-          Telefono: this.selectedContacto.telefono,
-          DireccionFiscal: this.selectedContacto.direccion || ''
-        },
-        Productos: [{
-          Name: `${formValues.tipoProducto} - ${formValues.serie}`,
-          Width: formValues.ancho,
-          Heigth: formValues.alto,
-          Color: formValues.color,
-          amount: formValues.cantidad,
-          GlassThickness: formValues.espesor,
-          GlassType: formValues.tipoVidrio,
-          TypeProduct: formValues.tipoProducto,
-          Serie: formValues.serie
-        }]
-      };
-
-      this.presupuestoService.crearPresupuesto(budgetDto).subscribe({
-        next: (response) => {
-          this.loading = false;
-          this.success = 'Presupuesto creado correctamente';
-          this.presupuestoForm.reset();
-          this.clearContacto();
-        },
-        error: (err) => {
-          this.loading = false;
-          this.error = typeof err === 'string' ? err : 'Error al crear presupuesto';
-        }
-      });
-    } else {
-      Object.keys(this.presupuestoForm.controls).forEach(key => {
-        this.presupuestoForm.get(key)?.markAsTouched();
-      });
-      
+    if (!this.canSubmit()) {
       if (!this.selectedContacto) {
-        this.error = 'Por favor, seleccione un contacto';
-      } else {
-        this.error = 'Por favor, complete todos los campos requeridos';
+        this.error = 'Por favor, seleccione un cliente';
+      } else if (this.getValidItemsCount() === 0) {
+        this.error = 'Por favor, agregue al menos un producto válido';
       }
+      return;
+    }
+
+    this.isSubmitting = true;
+    this.error = null;
+    this.success = null;
+
+    // Filtrar solo items válidos
+    const validItems = this.budgetItems.filter(item => this.isItemValid(item));
+
+    const budgetDto: BudgetCreateDto = {
+      Cliente: {
+        CustomerId: this.selectedContacto!.CustomerId,
+        Nombre: this.selectedContacto!.Nombre,
+        Identificador: this.selectedContacto!.Identificador || '',
+        TipoDocumento: 'RUT', // TODO: Obtener del cliente cuando el backend lo provea
+        Email: this.selectedContacto!.Email || '',
+        Telefono: this.selectedContacto!.Telefono || '',
+        DireccionFiscal: '' // TODO: Obtener dirección cuando el backend lo provea
+      },
+      Productos: validItems.map(item => ({
+        Name: item.Name,
+        Width: Number(item.Width),
+        Heigth: Number(item.Heigth),
+        Color: item.Color,
+        amount: Number(item.amount),
+        GlassThickness: String(item.GlassThickness),
+        GlassType: Number(item.GlassType),  // Asegurar que se envíe como número
+        TypeProduct: Number(item.TypeProduct),  // Asegurar que se envíe como número
+        Serie: Number(item.Serie)  // Asegurar que se envíe como número
+      }))
+    };
+
+    this.presupuestoService.crearPresupuesto(budgetDto).subscribe({
+      next: (response) => {
+        this.isSubmitting = false;
+        this.success = 'Presupuesto generado exitosamente';
+        this.lastBudgetResult = response;
+
+        // Limpiar formulario después de éxito
+        setTimeout(() => {
+          this.resetForm();
+        }, 2000);
+      },
+      error: (err) => {
+        this.isSubmitting = false;
+        this.error = typeof err === 'string' ? err : 'Error al crear el presupuesto';
+        console.error('Error creating budget:', err);
+      }
+    });
+  }
+
+  resetForm() {
+    this.budgetItems = [];
+    this.clearContacto();
+    this.initializeEmptyItem();
+    this.error = null;
+    this.success = null;
+    this.presupuestoService.clearDraft();
+  }
+
+  saveDraft() {
+    if (this.budgetItems.length > 0 || this.selectedContacto) {
+      this.presupuestoService.saveDraft(this.selectedContacto, this.budgetItems);
+    }
+  }
+
+  loadDraft() {
+    const draft = this.presupuestoService.loadDraft();
+    if (draft) {
+      if (draft.cliente) {
+        this.selectedContacto = draft.cliente;
+        this.searchContacto = draft.cliente.Nombre;
+      }
+      if (draft.items && draft.items.length > 0) {
+        this.budgetItems = draft.items;
+      }
+    }
+  }
+
+  downloadBudget() {
+    if (this.lastBudgetResult) {
+      // TODO: Implementar descarga cuando el backend provea el archivo
+      console.log('Download budget:', this.lastBudgetResult);
+      this.success = 'Función de descarga próximamente disponible';
     }
   }
 
   volverAlDashboard() {
+    // Guardar borrador antes de salir
+    this.saveDraft();
     this.router.navigate(['/dashboard']);
+  }
+
+  private generateId(): string {
+    return Date.now().toString(36) + Math.random().toString(36).substr(2);
   }
 }

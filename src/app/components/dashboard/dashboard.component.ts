@@ -13,9 +13,9 @@ import { AuthService } from '../../services/authService';
 })
 export class DashboardComponent implements OnInit {
   dashboardData: any = {
-    importeVendido: 0,
-    productosEnStock: 0,
-    valorizacionStock: 0
+    contactos: 0,
+    productos: 0,
+    insumos: 0
   };
   currentUser: string = '';
   currentCompany: string = '';
@@ -33,16 +33,22 @@ export class DashboardComponent implements OnInit {
   }
 
   loadUserData() {
-    this.authService.getCurrentUser().subscribe({
+    // Suscribirse al usuario actual en memoria
+    this.authService.currentUser$.subscribe({
       next: (user: any) => {
+        console.log('Usuario recibido en dashboard:', user);
         this.currentUser = user?.name || 'Usuario';
-      },
-      error: (error: any) => {
-        console.error('Error loading user data:', error);
-        this.currentUser = 'Usuario';
       }
     });
 
+    // Obtener usuario inmediatamente desde memoria si está disponible
+    const currentUser = this.authService.getCurrentUser();
+    if (currentUser) {
+      console.log('Usuario inmediato desde memoria:', currentUser);
+      this.currentUser = currentUser.name;
+    }
+
+    // Mantener el company por compatibilidad
     this.authService.getCurrentCompany().subscribe({
       next: (company: any) => {
         this.currentCompany = company?.name || 'Stock Manager';
@@ -58,9 +64,9 @@ export class DashboardComponent implements OnInit {
     this.commonService.getDashboardData().subscribe({
       next: (data: any) => {
         this.dashboardData = {
-          importeVendido: data.importeVendido || 0,
-          productosEnStock: data.productosEnStock || 0,
-          valorizacionStock: data.valorizacionStock || 0
+          contactos: data.contactos || 0,
+          productos: data.productos || 0,
+          insumos: data.insumos || 0
         };
         this.isLoading = false;
       },
@@ -68,9 +74,9 @@ export class DashboardComponent implements OnInit {
         console.error('Error loading dashboard data:', error);
         // Load test data when API fails
         this.dashboardData = {
-          importeVendido: 2485750.50,
-          productosEnStock: 247,
-          valorizacionStock: 1825430.75
+          contactos: 0,
+          productos: 0,
+          insumos: 0
         };
         this.isLoading = false;
       }
@@ -86,5 +92,11 @@ export class DashboardComponent implements OnInit {
 
   formatNumber(value: number): string {
     return new Intl.NumberFormat('es-AR').format(value);
+  }
+
+  logout() {
+    if (confirm('¿Está seguro que desea cerrar sesión?')) {
+      this.authService.logout();
+    }
   }
 }

@@ -1,43 +1,140 @@
 <div class="stock-movements-container">
-  <div class="search-section">
+  <div class="header-section">
     <button class="btn btn-secondary volver-button" (click)="volverAlDashboard()">
       ← Volver
     </button>
     <h2 class="page-title">Movimientos de Stock</h2>
-    
-    <div class="search-controls">
-      <div class="search-input-group">
-        <input
-          type="text"
-          class="search-input"
-          placeholder="Buscar movimientos..."
-          [(ngModel)]="searchText"
-          (keyup.enter)="onSearch()">
+  </div>
+  
+  <div class="filters-section">
+    <div class="filters-card">
+      <div class="filters-row">
+        <div class="filter-group">
+          <label for="sku-filter">SKU</label>
+          <input
+            id="sku-filter"
+            type="text"
+            class="filter-input"
+            placeholder="Buscar por SKU..."
+            [(ngModel)]="filters.sku"
+            (input)="onSkuChange()">
+        </div>
         
+        <div class="filter-group">
+          <label for="type-filter">Tipo de Movimiento</label>
+          <select
+            id="type-filter"
+            class="filter-select"
+            [(ngModel)]="filters.type">
+            <option *ngFor="let type of movementTypes" [value]="type.value">
+              {{ type.label }}
+            </option>
+          </select>
+        </div>
+        
+        <div class="filter-group">
+          <label for="from-date">Fecha Desde</label>
+          <input
+            id="from-date"
+            type="date"
+            class="filter-input"
+            [(ngModel)]="filters.from">
+        </div>
+        
+        <div class="filter-group">
+          <label for="to-date">Fecha Hasta</label>
+          <input
+            id="to-date"
+            type="date"
+            class="filter-input"
+            [(ngModel)]="filters.to">
+        </div>
+      </div>
+      
+      <div class="filter-actions">
         <button
           type="button"
-          class="search-button"
-          (click)="onSearch()">
-          Buscar
+          class="btn btn-primary filter-button"
+          (click)="onFilter()"
+          [disabled]="loading">
+          {{ loading ? 'Cargando...' : 'Filtrar' }}
         </button>
         
         <button
           type="button"
-          class="clear-button"
-          (click)="onClearSearch()"
-          [disabled]="!searchText">
-          Limpiar
+          class="btn btn-secondary clear-button"
+          (click)="onClearFilters()"
+          [disabled]="loading">
+          Limpiar Filtros
+        </button>
+        
+        <button
+          type="button"
+          class="btn btn-success refresh-button"
+          (click)="onRefresh()"
+          [disabled]="loading">
+          {{ loading ? 'Consultando...' : 'Consultar' }}
         </button>
       </div>
     </div>
   </div>
 
-  <div class="data-table-section">
-    <app-data-table
-      [columns]="columns"
-      [data]="filteredStockMovements"
-      [filters]="''"
-      [buttons]="[]">
-    </app-data-table>
+  <div class="table-section">
+    <div class="table-header">
+      <div class="records-info">
+        <span *ngIf="total > 0">
+          Mostrando {{ startRecord }} - {{ endRecord }} de {{ total }} registros
+        </span>
+        <span *ngIf="total === 0 && !loading">
+          No se encontraron movimientos
+        </span>
+      </div>
+      
+      <div class="page-size-selector">
+        <label for="page-size">Registros por página:</label>
+        <select
+          id="page-size"
+          class="page-size-select"
+          [(ngModel)]="pageSize"
+          (change)="onPageSizeChange(pageSize)">
+          <option *ngFor="let size of pageSizeOptions" [value]="size">
+            {{ size }}
+          </option>
+        </select>
+      </div>
+    </div>
+
+    <div class="data-table-wrapper" [class.loading]="loading">
+      <app-data-table
+        [columns]="columns"
+        [data]="rows"
+        [filters]="''"
+        [buttons]="[]">
+      </app-data-table>
+      
+      <div class="loading-overlay" *ngIf="loading">
+        <div class="loading-spinner"></div>
+      </div>
+    </div>
+    
+    <div class="pagination" *ngIf="total > pageSize && !loading">
+      <button
+        class="pagination-btn"
+        [disabled]="page <= 1"
+        (click)="onPageChange(page - 1)">
+        ← Anterior
+      </button>
+      
+      <div class="page-info">
+        <span>Página {{ page }} de {{ totalPages }}</span>
+      </div>
+      
+      <button
+        class="pagination-btn"
+        [disabled]="page >= totalPages"
+        (click)="onPageChange(page + 1)">
+        Siguiente →
+      </button>
+    </div>
   </div>
 </div>

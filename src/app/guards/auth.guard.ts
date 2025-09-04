@@ -6,9 +6,8 @@ export const authGuard = () => {
   const authService = inject(AuthService);
   const router = inject(Router);
 
-  const token = authService.getToken();
-  console.log('aca')
-  if (!token) {
+  const session = authService.getSession();
+  if (!session || !session.token) {
     router.navigate(['/login']);
     return false;
   }

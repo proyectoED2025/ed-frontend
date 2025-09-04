@@ -6,209 +6,308 @@
     <h1 class="page-title">Crear Presupuesto</h1>
   </div>
 
+  <!-- Mensajes globales -->
+  <div class="alerts-container">
+    <div *ngIf="success" class="alert alert-success alert-dismissible">
+      {{ success }}
+      <button type="button" class="btn-close" (click)="success = null"></button>
+    </div>
+    
+    <div *ngIf="error" class="alert alert-danger alert-dismissible">
+      {{ error }}
+      <button type="button" class="btn-close" (click)="error = null"></button>
+    </div>
+  </div>
+
   <div class="presupuestador-content">
-    <!-- Buscador de Contacto -->
-    <div class="contact-search-section">
-      <h2 class="section-title">Seleccionar Contacto</h2>
+    <!-- Sección de Cliente -->
+    <div class="section-card">
+      <h2 class="section-title">
+        <span class="section-icon">👤</span>
+        Seleccionar Cliente
+      </h2>
+      
       <div class="contact-search-container">
-        <div class="search-input-container">
+        <div class="search-input-wrapper">
           <input
             type="text"
-            class="contact-search-input"
-            placeholder="Buscar contacto por nombre, empresa o email..."
+            class="form-control search-input"
+            placeholder="Buscar cliente por nombre, identificador o email..."
             [(ngModel)]="searchContacto"
-            (input)="onSearchContacto()"
-            [class.has-selection]="selectedContacto">
+            (input)="onSearchContacto($event)"
+            [class.has-selection]="selectedContacto"
+            [disabled]="loadingContactos">
+          
+          <span class="search-icon" *ngIf="!loadingContactos">🔍</span>
+          <span class="spinner-border spinner-border-sm search-icon" *ngIf="loadingContactos"></span>
           
           <button 
             type="button" 
-            class="clear-contact-button"
+            class="btn btn-sm btn-clear"
             (click)="clearContacto()"
             *ngIf="selectedContacto">
-            ×
+            ✕
           </button>
         </div>
 
-        <!-- Dropdown de contactos filtrados -->
-        <div class="contact-dropdown" *ngIf="showContactDropdown">
+        <!-- Dropdown de resultados -->
+        <div class="search-dropdown" *ngIf="showContactDropdown">
           <div 
-            class="contact-option" 
+            class="search-result-item" 
             *ngFor="let contacto of filteredContactos"
             (click)="selectContacto(contacto)">
-            <div class="contact-name">{{ contacto.nombre }}</div>
-            <div class="contact-details">{{ contacto.empresa }} - {{ contacto.email }}</div>
+            <div class="result-name">{{ contacto.Nombre }}</div>
+            <div class="result-details">
+              <span class="badge bg-secondary">{{ contacto.Identificador }}</span>
+              <span class="text-muted">{{ contacto.Email }}</span>
+            </div>
+          </div>
+          <div class="no-results" *ngIf="filteredContactos.length === 0">
+            No se encontraron resultados
           </div>
         </div>
 
-        <!-- Contacto seleccionado -->
-        <div class="selected-contact" *ngIf="selectedContacto">
-          <div class="contact-card">
-            <div class="contact-info">
-              <h4>{{ selectedContacto.nombre }}</h4>
-              <p>{{ selectedContacto.empresa }}</p>
-              <p>{{ selectedContacto.email }} - {{ selectedContacto.telefono }}</p>
+        <!-- Cliente seleccionado -->
+        <div class="selected-client-card" *ngIf="selectedContacto">
+          <div class="client-info">
+            <h5>{{ selectedContacto.Nombre }}</h5>
+            <div class="client-details">
+              <span><strong>ID:</strong> {{ selectedContacto.Identificador }}</span>
+              <span><strong>Email:</strong> {{ selectedContacto.Email }}</span>
+              <span><strong>Teléfono:</strong> {{ selectedContacto.Telefono }}</span>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Formulario de Presupuesto -->
-    <div class="presupuesto-form-section">
-      <h2 class="section-title">Datos del Presupuesto</h2>
-      <form [formGroup]="presupuestoForm" class="presupuesto-form">
-        
-        <!-- Primera fila -->
-        <div class="form-row">
-          <div class="form-group">
-            <label for="tipoProducto">Tipo de Producto *</label>
-            <select 
-              id="tipoProducto" 
-              class="form-control"
-              formControlName="tipoProducto"
-              [class.is-invalid]="isFieldInvalid('tipoProducto')">
-              <option *ngFor="let tipo of tiposProducto" [value]="tipo.value">
-                {{ tipo.label }}
-              </option>
-            </select>
-            <div class="invalid-feedback" *ngIf="isFieldInvalid('tipoProducto')">
-              {{ getFieldError('tipoProducto') }}
-            </div>
-          </div>
+    <!-- Sección de Productos -->
+    <div class="section-card">
+      <div class="section-header">
+        <h2 class="section-title">
+          <span class="section-icon">📦</span>
+          Productos del Presupuesto
+        </h2>
+        <div class="section-summary">
+          <span class="badge bg-info">{{ getValidItemsCount() }} producto(s)</span>
+          <span class="badge bg-primary">{{ getTotalAmount() }} unidad(es) total</span>
+        </div>
+      </div>
 
-          <div class="form-group">
-            <label for="serie">Serie *</label>
-            <input 
-              type="text" 
-              id="serie" 
-              class="form-control"
-              formControlName="serie"
-              placeholder="Ej: Serie A100"
-              [class.is-invalid]="isFieldInvalid('serie')">
-            <div class="invalid-feedback" *ngIf="isFieldInvalid('serie')">
-              {{ getFieldError('serie') }}
-            </div>
-          </div>
+      <!-- Tabla de productos -->
+      <div class="products-table-container">
+        <table class="table products-table">
+          <thead>
+            <tr>
+              <th width="15%">Nombre *</th>
+              <th width="12%">Tipo *</th>
+              <th width="10%">Serie *</th>
+              <th width="12%">Vidrio *</th>
+              <th width="8%">Espesor *</th>
+              <th width="8%">Ancho *</th>
+              <th width="8%">Alto *</th>
+              <th width="10%">Color *</th>
+              <th width="7%">Cant. *</th>
+              <th width="10%">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of budgetItems; let i = index" 
+                [class.invalid-row]="!item.isValid && (item.Name || item.Width || item.Heigth)">
+              <td>
+                <input 
+                  type="text" 
+                  class="form-control form-control-sm item-name-input"
+                  [(ngModel)]="item.Name"
+                  (change)="onItemChange(item)"
+                  (keypress)="onItemKeyPress($event, item, 'Name')"
+                  placeholder="Nombre producto"
+                  [class.is-invalid]="!item.Name && item.isValid === false">
+              </td>
+              <td>
+                <select 
+                  class="form-control form-control-sm"
+                  [(ngModel)]="item.TypeProduct"
+                  (change)="onItemChange(item)"
+                  [class.is-invalid]="item.TypeProduct === null && item.isValid === false">
+                  <option [ngValue]="null">Seleccionar</option>
+                  <option *ngFor="let type of productTypes" [ngValue]="type.value">
+                    {{ type.label }}
+                  </option>
+                </select>
+              </td>
+              <td>
+                <select 
+                  class="form-control form-control-sm"
+                  [(ngModel)]="item.Serie"
+                  (change)="onItemChange(item)"
+                  [class.is-invalid]="item.Serie === null && item.isValid === false">
+                  <option [ngValue]="null">Seleccionar</option>
+                  <option *ngFor="let serie of series" [ngValue]="serie.value">
+                    {{ serie.label }}
+                  </option>
+                </select>
+              </td>
+              <td>
+                <select 
+                  class="form-control form-control-sm"
+                  [(ngModel)]="item.GlassType"
+                  (change)="onItemChange(item)"
+                  [class.is-invalid]="item.GlassType === null && item.isValid === false">
+                  <option [ngValue]="null">Seleccionar</option>
+                  <option *ngFor="let glass of glassTypes" [ngValue]="glass.value">
+                    {{ glass.label }}
+                  </option>
+                </select>
+              </td>
+              <td>
+                <select 
+                  class="form-control form-control-sm"
+                  [(ngModel)]="item.GlassThickness"
+                  (change)="onItemChange(item)"
+                  [class.is-invalid]="!item.GlassThickness && item.isValid === false">
+                  <option *ngFor="let thickness of glassThickness" [value]="thickness.value">
+                    {{ thickness.label }}
+                  </option>
+                </select>
+              </td>
+              <td>
+                <input 
+                  type="number" 
+                  class="form-control form-control-sm"
+                  [(ngModel)]="item.Width"
+                  (change)="onItemChange(item)"
+                  (keypress)="onItemKeyPress($event, item, 'Width')"
+                  placeholder="mm"
+                  min="1"
+                  [class.is-invalid]="item.Width <= 0 && item.isValid === false">
+              </td>
+              <td>
+                <input 
+                  type="number" 
+                  class="form-control form-control-sm"
+                  [(ngModel)]="item.Heigth"
+                  (change)="onItemChange(item)"
+                  (keypress)="onItemKeyPress($event, item, 'Heigth')"
+                  placeholder="mm"
+                  min="1"
+                  [class.is-invalid]="item.Heigth <= 0 && item.isValid === false">
+              </td>
+              <td>
+                <select 
+                  class="form-control form-control-sm"
+                  [(ngModel)]="item.Color"
+                  (change)="onItemChange(item)"
+                  [class.is-invalid]="!item.Color && item.isValid === false">
+                  <option value="">Seleccionar</option>
+                  <option *ngFor="let color of colors" [value]="color.value">
+                    {{ color.label }}
+                  </option>
+                </select>
+              </td>
+              <td>
+                <input 
+                  type="number" 
+                  class="form-control form-control-sm"
+                  [(ngModel)]="item.amount"
+                  (change)="onItemChange(item)"
+                  (keypress)="onItemKeyPress($event, item, 'amount')"
+                  min="1"
+                  [class.is-invalid]="item.amount <= 0 && item.isValid === false">
+              </td>
+              <td>
+                <div class="btn-group btn-group-sm">
+                  <button 
+                    type="button" 
+                    class="btn btn-outline-primary"
+                    (click)="duplicateItem(i)"
+                    title="Duplicar">
+                    📋
+                  </button>
+                  <button 
+                    type="button" 
+                    class="btn btn-outline-danger"
+                    (click)="removeItem(i)"
+                    [disabled]="budgetItems.length === 1"
+                    title="Eliminar">
+                    🗑️
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
-          <div class="form-group">
-            <label for="tipoVidrio">Tipo de Vidrio *</label>
-            <select 
-              id="tipoVidrio" 
-              class="form-control"
-              formControlName="tipoVidrio"
-              [class.is-invalid]="isFieldInvalid('tipoVidrio')">
-              <option *ngFor="let tipo of tiposVidrio" [value]="tipo.value">
-                {{ tipo.label }}
-              </option>
-            </select>
-            <div class="invalid-feedback" *ngIf="isFieldInvalid('tipoVidrio')">
-              {{ getFieldError('tipoVidrio') }}
+      <!-- Botón agregar ítem -->
+      <div class="add-item-container">
+        <button 
+          type="button" 
+          class="btn btn-outline-success btn-sm"
+          (click)="addItem()">
+          ➕ Agregar Producto
+        </button>
+        <small class="text-muted ms-3">
+          Tip: Presiona Enter en el último campo para agregar una nueva fila
+        </small>
+      </div>
+    </div>
+
+    <!-- Sección de Resumen y Acciones -->
+    <div class="section-card">
+      <div class="actions-section">
+        <div class="summary-info">
+          <h4>Resumen del Presupuesto</h4>
+          <div class="summary-details">
+            <div class="summary-item">
+              <span class="summary-label">Cliente:</span>
+              <span class="summary-value">
+                {{ selectedContacto ? selectedContacto.Nombre : 'No seleccionado' }}
+              </span>
+            </div>
+            <div class="summary-item">
+              <span class="summary-label">Productos válidos:</span>
+              <span class="summary-value">{{ getValidItemsCount() }}</span>
+            </div>
+            <div class="summary-item">
+              <span class="summary-label">Cantidad total:</span>
+              <span class="summary-value">{{ getTotalAmount() }} unidades</span>
             </div>
           </div>
         </div>
 
-        <!-- Segunda fila -->
-        <div class="form-row">
-          <div class="form-group">
-            <label for="espesor">Espesor (mm) *</label>
-            <input 
-              type="number" 
-              id="espesor" 
-              class="form-control"
-              formControlName="espesor"
-              placeholder="Ej: 6"
-              min="1"
-              step="0.1"
-              [class.is-invalid]="isFieldInvalid('espesor')">
-            <div class="invalid-feedback" *ngIf="isFieldInvalid('espesor')">
-              {{ getFieldError('espesor') }}
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="ancho">Ancho (mm) *</label>
-            <input 
-              type="number" 
-              id="ancho" 
-              class="form-control"
-              formControlName="ancho"
-              placeholder="Ej: 1200"
-              min="1"
-              [class.is-invalid]="isFieldInvalid('ancho')">
-            <div class="invalid-feedback" *ngIf="isFieldInvalid('ancho')">
-              {{ getFieldError('ancho') }}
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="alto">Alto (mm) *</label>
-            <input 
-              type="number" 
-              id="alto" 
-              class="form-control"
-              formControlName="alto"
-              placeholder="Ej: 1500"
-              min="1"
-              [class.is-invalid]="isFieldInvalid('alto')">
-            <div class="invalid-feedback" *ngIf="isFieldInvalid('alto')">
-              {{ getFieldError('alto') }}
-            </div>
-          </div>
-        </div>
-
-        <!-- Tercera fila -->
-        <div class="form-row">
-          <div class="form-group">
-            <label for="color">Color *</label>
-            <input 
-              type="text" 
-              id="color" 
-              class="form-control"
-              formControlName="color"
-              placeholder="Ej: Blanco, Negro, Madera"
-              [class.is-invalid]="isFieldInvalid('color')">
-            <div class="invalid-feedback" *ngIf="isFieldInvalid('color')">
-              {{ getFieldError('color') }}
-            </div>
-          </div>
-          
-          <div class="form-group">
-            <label for="cantidad">Cantidad *</label>
-            <input 
-              type="number" 
-              id="cantidad" 
-              class="form-control"
-              formControlName="cantidad"
-              placeholder="1"
-              min="1"
-              [class.is-invalid]="isFieldInvalid('cantidad')">
-            <div class="invalid-feedback" *ngIf="isFieldInvalid('cantidad')">
-              {{ getFieldError('cantidad') }}
-            </div>
-          </div>
-        </div>
-
-        <!-- Mensajes -->
-        <div *ngIf="success" class="alert alert-success">
-          {{ success }}
-        </div>
-        
-        <div *ngIf="error" class="alert alert-danger">
-          {{ error }}
-        </div>
-
-        <!-- Botón Grabar -->
-        <div class="form-actions">
+        <div class="action-buttons">
           <button 
             type="button" 
-            class="btn btn-primary grabar-button"
-            [disabled]="loading"
+            class="btn btn-primary btn-lg"
+            [disabled]="!canSubmit()"
             (click)="grabarPresupuesto()">
-            <span *ngIf="loading" class="spinner-border spinner-border-sm me-2"></span>
-            {{ loading ? 'Guardando...' : '💾 Grabar Presupuesto' }}
+            <span *ngIf="isSubmitting" class="spinner-border spinner-border-sm me-2"></span>
+            {{ isSubmitting ? 'Generando...' : '📄 Generar Presupuesto' }}
+          </button>
+
+          <button 
+            type="button" 
+            class="btn btn-outline-secondary"
+            (click)="resetForm()">
+            🔄 Limpiar Formulario
           </button>
         </div>
-      </form>
+
+        <!-- Resultado del presupuesto -->
+        <div class="budget-result" *ngIf="lastBudgetResult">
+          <div class="alert alert-info">
+            <h5>✅ Presupuesto Generado</h5>
+            <p>ID: {{ lastBudgetResult.id || 'N/A' }}</p>
+            <button 
+              type="button" 
+              class="btn btn-sm btn-primary"
+              (click)="downloadBudget()">
+              📥 Descargar PDF
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>

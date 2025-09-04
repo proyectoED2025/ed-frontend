@@ -1,9 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { DataTableComponent, DataTableColumn, DataTableButton } from '../data-table/data-table.component';
-import { ContactosService } from '../../services/contactos.service';
+import { ContactosService, CustomerListItem, CustomerCreatePayload, CustomerUpdatePayload, Customer, Direccion } from '../../services/contactos.service';
+import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 
 @Component({
   selector: 'app-contacts-list',
@@ -12,24 +13,36 @@ import { ContactosService } from '../../services/contactos.service';
   templateUrl: './contacts-list.component.html',
   styleUrls: ['./contacts-list.component.scss']
 })
-export class ContactsListComponent implements OnInit {
-  searchText: string = '';
-  contacts: any[] = [];
-  filteredContacts: any[] = [];
+export class ContactsListComponent implements OnInit, OnDestroy {
+  rows: CustomerListItem[] = [];
+  total: number = 0;
+  page: number = 1;
+  pageSize: number = 10;
+  q: string = '';
+  sortBy: string = 'Nombre';
+  sortDir: 'asc' | 'desc' = 'asc';
+  loading: boolean = false;
+
   showModal: boolean = false;
   isEditing: boolean = false;
   contactForm: FormGroup;
-  currentContact: any = null;
+  currentContact: Customer | null = null;
+  error: string | null = null;
+  success: string | null = null;
+
+  Math = Math;
+  private searchSubject = new Subject<string>();
 
   columns: DataTableColumn[] = [
-    { key: 'id', label: 'ID' },
-    { key: 'nombre', label: 'Nombre' },
-    { key: 'email', label: 'Email' },
-    { key: 'telefono', label: 'Teléfono' },
-    { key: 'empresa', label: 'Empresa' }
+    { key: 'CustomerId', label: 'ID' },
+    { key: 'Nombre', label: 'Nombre' },
+    { key: 'Identificador', label: 'Identificador' },
+    { key: 'Email', label: 'Email' },
+    { key: 'Telefono', label: 'Teléfono' }
   ];
 
   buttons: DataTableButton[] = [
+    { id: 'edit', label: '✏️', class: 'btn-primary' },
     { id: 'delete', label: '🗑️', class: 'btn-danger' }
   ];
 
@@ -39,132 +52,212 @@ export class ContactsListComponent implements OnInit {
     private router: Router
   ) {
     this.contactForm = this.formBuilder.group({
-      id: [''],
       nombre: ['', Validators.required],
-      email: ['', [Validators.required, Validators.email]],
-      telefono: ['', Validators.required],
-      empresa: ['']
+      identificador: ['', Validators.required],
+      tipoDocumento: ['RUT'],
+      email: ['', [Validators.email]],
+      telefono: [''],
+      direccionFiscal: this.formBuilder.group({
+        calle: [''],
+        numero: [''],
+        ciudad: [''],
+        departamento: [''],
+        codigoPostal: [''],
+        pais: ['Uruguay']
+      })
     });
   }
 
   ngOnInit() {
-    this.loadContacts();
+    this.searchSubject.pipe(
+      debounceTime(300),
+      distinctUntilChanged()
+    ).subscribe(searchTerm => {
+      this.q = searchTerm;
+      this.page = 1;
+      this.reload();
+    });
+
+    this.reload();
   }
 
-  loadContacts() {
-    this.contactosService.getContactos().subscribe({
-      next: (data) => {
-        this.contacts = data;
-        this.filteredContacts = [...data];
+  ngOnDestroy() {
+    this.searchSubject.complete();
+  }
+
+  reload() {
+    this.loading = true;
+    this.error = null;
+
+    this.contactosService.list({
+      page: this.page,
+      pageSize: this.pageSize,
+      q: this.q || undefined,
+      sortBy: this.sortBy || undefined,
+      sortDir: this.sortDir
+    }).subscribe({
+      next: (response) => {
+        this.rows = response.Items;
+        this.total = response.total;
+        this.page = response.page;
+        this.pageSize = response.pageSize;
+        this.loading = false;
       },
       error: (error) => {
         console.error('Error loading contacts:', error);
-        // Load test data when API fails
-        this.contacts = [
-          {
-            id: 1,
-            nombre: 'María González',
-            email: 'maria.gonzalez@techsolutions.com',
-            telefono: '+54 11 4567-8901',
-            empresa: 'Tech Solutions SA'
-          },
-          {
-            id: 2,
-            nombre: 'Carlos Rodríguez',
-            email: 'carlos.rodriguez@innovatech.com.ar',
-            telefono: '+54 9 2615 123-456',
-            empresa: 'InnovaTech Argentina'
-          },
-          {
-            id: 3,
-            nombre: 'Ana Fernández',
-            email: 'ana.fernandez@digitalcorp.com',
-            telefono: '+54 11 9876-5432',
-            empresa: 'Digital Corp'
-          }
-        ];
-        this.filteredContacts = [...this.contacts];
+        this.error = 'Error al cargar contactos';
+        this.loading = false;
+        this.total = 2;
       }
     });
   }
 
-  onSearch() {
-    if (!this.searchText.trim()) {
-      this.filteredContacts = [...this.contacts];
-      return;
-    }
-
-    const searchLower = this.searchText.toLowerCase();
-    this.filteredContacts = this.contacts.filter(contact =>
-      Object.values(contact).some(value =>
-        String(value).toLowerCase().includes(searchLower)
-      )
-    );
+  onPageChange(newPage: number) {
+    this.page = newPage;
+    this.reload();
   }
 
-  onClearSearch() {
-    this.searchText = '';
-    this.filteredContacts = [...this.contacts];
+  onPageSizeChange(newPageSize: number) {
+    this.pageSize = newPageSize;
+    this.page = 1;
+    this.reload();
   }
 
-  onAddContact() {
+  onSortChange(field: string, dir: 'asc' | 'desc') {
+    this.sortBy = field;
+    this.sortDir = dir;
+    this.reload();
+  }
+
+  onSearch(query: string) {
+    this.searchSubject.next(query);
+  }
+
+  onCreate() {
     this.isEditing = false;
     this.currentContact = null;
-    this.contactForm.reset();
+    this.contactForm.reset({
+      tipoDocumento: 'RUT',
+      direccionFiscal: {
+        calle: '',
+        numero: '',
+        ciudad: '',
+        departamento: '',
+        codigoPostal: '',
+        pais: 'Uruguay'
+      }
+    });
     this.showModal = true;
   }
 
-  onRowClick(contact: any) {
+  onEdit(row: CustomerListItem) {
     this.isEditing = true;
-    this.currentContact = contact;
-    this.contactForm.patchValue(contact);
-    this.showModal = true;
+    this.loading = true;
+
+    this.contactosService.getById(row.CustomerId).subscribe({
+      next: (customer) => {
+        this.currentContact = customer;
+        this.contactForm.patchValue({
+          nombre: customer.Nombre,
+          identificador: customer.Identificador,
+          tipoDocumento: customer.TipoDocumento || 'RUT',
+          email: customer.Email || '',
+          telefono: customer.Telefono || '',
+          direccionFiscal: {
+            calle: customer.DireccionFiscal?.Calle || '',
+            numero: customer.DireccionFiscal?.Numero || '',
+            ciudad: customer.DireccionFiscal?.Ciudad || '',
+            departamento: customer.DireccionFiscal?.Departamento || '',
+            codigoPostal: customer.DireccionFiscal?.CodigoPostal || '',
+            pais: customer.DireccionFiscal?.Pais || 'Uruguay'
+          }
+        });
+        this.loading = false;
+        this.showModal = true;
+      },
+      error: (error) => {
+        console.error('Error loading customer details:', error);
+        this.error = 'Error al cargar detalles del contacto';
+        this.loading = false;
+      }
+    });
   }
 
-  onButtonClick(event: { buttonId: string, row: any, index: number }) {
-    if (event.buttonId === 'delete') {
-      this.onDeleteContact(event.row);
-    }
-  }
+  onDelete(row: CustomerListItem) {
+    if (confirm(`¿Está seguro que desea eliminar el contacto ${row.Nombre}?`)) {
+      this.loading = true;
 
-  onDeleteContact(contact: any) {
-    if (confirm(`¿Está seguro que desea eliminar el contacto ${contact.nombre}?`)) {
-      this.contactosService.deleteContacto(contact.id).subscribe({
+      this.contactosService.delete(row.CustomerId).subscribe({
         next: () => {
-          this.loadContacts();
+          this.success = 'Contacto eliminado correctamente';
+
+          const totalPages = Math.ceil(this.total / this.pageSize);
+          if (this.page > totalPages && this.page > 1) {
+            this.page--;
+          }
+
+          this.reload();
         },
         error: (error) => {
           console.error('Error deleting contact:', error);
+          this.error = 'Error al eliminar contacto';
+          this.loading = false;
         }
       });
     }
   }
 
+  onButtonClick(event: { buttonId: string, row: any, index: number }) {
+    if (event.buttonId === 'edit') {
+      this.onEdit(event.row);
+    } else if (event.buttonId === 'delete') {
+      this.onDelete(event.row);
+    }
+  }
+
   onSaveContact() {
     if (this.contactForm.valid) {
-      const contactData = this.contactForm.value;
+      this.loading = true;
+      this.error = null;
 
-      if (this.isEditing) {
-        this.contactosService.updateContacto(contactData).subscribe({
-          next: () => {
-            this.closeModal();
-            this.loadContacts();
-          },
-          error: (error) => {
-            console.error('Error updating contact:', error);
-          }
-        });
-      } else {
-        this.contactosService.addContacto(contactData).subscribe({
-          next: () => {
-            this.closeModal();
-            this.loadContacts();
-          },
-          error: (error) => {
-            console.error('Error adding contact:', error);
-          }
-        });
-      }
+      const formValue = this.contactForm.value;
+
+      const payload: CustomerCreatePayload | CustomerUpdatePayload = {
+        Nombre: formValue.nombre,
+        Identificador: formValue.identificador,
+        TipoDocumento: formValue.tipoDocumento || 'RUT',
+        Email: formValue.email || undefined,
+        Telefono: formValue.telefono || undefined,
+        DireccionFiscal: {
+          Calle: formValue.direccionFiscal.calle || '',
+          Numero: formValue.direccionFiscal.numero || '',
+          Ciudad: formValue.direccionFiscal.ciudad || '',
+          Departamento: formValue.direccionFiscal.departamento || '',
+          CodigoPostal: formValue.direccionFiscal.codigoPostal || '',
+          Pais: formValue.direccionFiscal.pais || 'Uruguay'
+        }
+      };
+
+      const operation = this.isEditing
+        ? this.contactosService.update(this.currentContact!.CustomerId, payload)
+        : this.contactosService.create(payload);
+
+      operation.subscribe({
+        next: () => {
+          this.loading = false;
+          this.success = this.isEditing ? 'Contacto actualizado correctamente' : 'Contacto creado correctamente';
+          this.closeModal();
+          // Refresh the list after a brief delay to ensure the modal has closed
+          setTimeout(() => {
+            this.reload();
+          }, 100);
+        },
+        error: (error) => {
+          console.error('Error saving contact:', error);
+          this.error = 'Error al guardar contacto';
+          this.loading = false;
+        }
+      });
     }
   }
 
@@ -178,6 +271,16 @@ export class ContactsListComponent implements OnInit {
   isFieldInvalid(fieldName: string): boolean {
     const field = this.contactForm.get(fieldName);
     return !!(field && field.invalid && (field.dirty || field.touched));
+  }
+
+  clearMessages() {
+    this.error = null;
+    this.success = null;
+  }
+
+  onRefresh() {
+    this.clearMessages();
+    this.reload();
   }
 
   volverAlDashboard() {

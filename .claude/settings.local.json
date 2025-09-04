@@ -7,7 +7,8 @@
       "Bash(npm install)",
       "Bash(npx tsc:*)",
       "Bash(npx ng build:*)",
-      "Bash(npm start)"
+      "Bash(npm start)",
+      "Bash(curl:*)"
     ],
     "deny": []
   }

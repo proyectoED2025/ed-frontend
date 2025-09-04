@@ -10,46 +10,83 @@
         <input
           type="text"
           class="search-input"
-          placeholder="Buscar contactos..."
-          [(ngModel)]="searchText"
-          (keyup.enter)="onSearch()">
+          placeholder="Buscar por nombre o identificador..."
+          [(ngModel)]="q"
+          (keyup.enter)="onSearch(q)"
+          (input)="onSearch(q)">
         
         <button
           type="button"
-          class="search-button"
-          (click)="onSearch()">
-          Buscar
-        </button>
-        
-        <button
-          type="button"
-          class="clear-button"
-          (click)="onClearSearch()"
-          [disabled]="!searchText">
-          Limpiar
+          class="consultar-button"
+          (click)="onRefresh()">
+          🔄 Consultar
         </button>
         
         <button
           type="button"
           class="add-button"
-          (click)="onAddContact()">
-          + Agregar Contacto
+          (click)="onCreate()">
+          + Nuevo Contacto
         </button>
       </div>
     </div>
   </div>
 
+  <div class="alerts" *ngIf="error || success">
+    <div class="alert alert-danger" *ngIf="error" (click)="clearMessages()">
+      {{ error }}
+    </div>
+    <div class="alert alert-success" *ngIf="success" (click)="clearMessages()">
+      {{ success }}
+    </div>
+  </div>
+
   <div class="data-table-section">
+    <div class="loading" *ngIf="loading">
+      Cargando...
+    </div>
+
     <app-data-table
       [columns]="columns"
-      [data]="filteredContacts"
+      [data]="rows"
       [filters]="''"
       [buttons]="buttons"
       (buttonClick)="onButtonClick($event)">
     </app-data-table>
     
-    <div class="clickable-rows-overlay" *ngFor="let contact of filteredContacts; let i = index">
-      <div class="row-overlay" (click)="onRowClick(contact)"></div>
+    <div class="pagination-section" *ngIf="total > 0">
+      <div class="pagination-info">
+        Mostrando {{ ((page - 1) * pageSize + 1) }} a {{ Math.min(page * pageSize, total) }} de {{ total }} registros
+      </div>
+      
+      <div class="pagination-controls">
+        <select class="page-size-select" [(ngModel)]="pageSize" (change)="onPageSizeChange(pageSize)">
+          <option value="5">5</option>
+          <option value="10">10</option>
+          <option value="25">25</option>
+          <option value="50">50</option>
+        </select>
+        
+        <button
+          type="button"
+          class="btn btn-sm"
+          [disabled]="page <= 1"
+          (click)="onPageChange(page - 1)">
+          Anterior
+        </button>
+        
+        <span class="page-info">
+          Página {{ page }} de {{ Math.ceil(total / pageSize) }}
+        </span>
+        
+        <button
+          type="button"
+          class="btn btn-sm"
+          [disabled]="page >= Math.ceil(total / pageSize)"
+          (click)="onPageChange(page + 1)">
+          Siguiente
+        </button>
+      </div>
     </div>
   </div>
 </div>
@@ -57,65 +94,151 @@
 <div class="modal-overlay" *ngIf="showModal" (click)="closeModal()">
   <div class="modal-content" (click)="$event.stopPropagation()">
     <div class="modal-header">
-      <h3>{{ isEditing ? 'Editar Contacto' : 'Agregar Contacto' }}</h3>
+      <h3>{{ isEditing ? 'Editar Contacto' : 'Nuevo Contacto' }}</h3>
       <button type="button" class="close-button" (click)="closeModal()">&times;</button>
     </div>
     
     <form [formGroup]="contactForm" (ngSubmit)="onSaveContact()" class="modal-body">
-      <div class="form-group">
-        <label for="nombre">Nombre *</label>
-        <input
-          type="text"
-          id="nombre"
-          class="form-control"
-          formControlName="nombre"
-          [class.is-invalid]="isFieldInvalid('nombre')">
-        <div class="invalid-feedback" *ngIf="isFieldInvalid('nombre')">
-          El nombre es requerido
+      <div class="form-row">
+        <div class="form-group col-md-6">
+          <label for="nombre">Nombre *</label>
+          <input
+            type="text"
+            id="nombre"
+            class="form-control"
+            formControlName="nombre"
+            [class.is-invalid]="isFieldInvalid('nombre')">
+          <div class="invalid-feedback" *ngIf="isFieldInvalid('nombre')">
+            El nombre es requerido
+          </div>
+        </div>
+
+        <div class="form-group col-md-6">
+          <label for="identificador">Identificador *</label>
+          <input
+            type="text"
+            id="identificador"
+            class="form-control"
+            formControlName="identificador"
+            [class.is-invalid]="isFieldInvalid('identificador')">
+          <div class="invalid-feedback" *ngIf="isFieldInvalid('identificador')">
+            El identificador es requerido
+          </div>
         </div>
       </div>
 
-      <div class="form-group">
-        <label for="email">Email *</label>
-        <input
-          type="email"
-          id="email"
-          class="form-control"
-          formControlName="email"
-          [class.is-invalid]="isFieldInvalid('email')">
-        <div class="invalid-feedback" *ngIf="isFieldInvalid('email')">
-          Ingrese un email válido
+      <div class="form-row">
+        <div class="form-group col-md-6">
+          <label for="tipoDocumento">Tipo de Documento</label>
+          <select
+            id="tipoDocumento"
+            class="form-control"
+            formControlName="tipoDocumento">
+            <option value="RUT">RUT</option>
+            <option value="CI">CI</option>
+            <option value="PASSPORT">Pasaporte</option>
+          </select>
+        </div>
+
+        <div class="form-group col-md-6">
+          <label for="email">Email</label>
+          <input
+            type="email"
+            id="email"
+            class="form-control"
+            formControlName="email"
+            [class.is-invalid]="isFieldInvalid('email')">
+          <div class="invalid-feedback" *ngIf="isFieldInvalid('email')">
+            Ingrese un email válido
+          </div>
         </div>
       </div>
 
-      <div class="form-group">
-        <label for="telefono">Teléfono *</label>
-        <input
-          type="tel"
-          id="telefono"
-          class="form-control"
-          formControlName="telefono"
-          [class.is-invalid]="isFieldInvalid('telefono')">
-        <div class="invalid-feedback" *ngIf="isFieldInvalid('telefono')">
-          El teléfono es requerido
+      <div class="form-row">
+        <div class="form-group col-md-6">
+          <label for="telefono">Teléfono</label>
+          <input
+            type="tel"
+            id="telefono"
+            class="form-control"
+            formControlName="telefono">
+        </div>
+
+        <div class="form-group col-md-6">
+          <!-- Empty space for symmetry -->
         </div>
       </div>
 
-      <div class="form-group">
-        <label for="empresa">Empresa</label>
-        <input
-          type="text"
-          id="empresa"
-          class="form-control"
-          formControlName="empresa">
+      <h4 class="section-title">Dirección Fiscal</h4>
+      
+      <div formGroupName="direccionFiscal">
+        <div class="form-row">
+          <div class="form-group col-md-6">
+            <label for="calle">Calle</label>
+            <input
+              type="text"
+              id="calle"
+              class="form-control"
+              formControlName="calle">
+          </div>
+
+          <div class="form-group col-md-6">
+            <label for="numero">Número</label>
+            <input
+              type="text"
+              id="numero"
+              class="form-control"
+              formControlName="numero">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group col-md-6">
+            <label for="ciudad">Ciudad</label>
+            <input
+              type="text"
+              id="ciudad"
+              class="form-control"
+              formControlName="ciudad">
+          </div>
+
+          <div class="form-group col-md-6">
+            <label for="departamento">Departamento</label>
+            <input
+              type="text"
+              id="departamento"
+              class="form-control"
+              formControlName="departamento">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group col-md-6">
+            <label for="codigoPostal">Código Postal</label>
+            <input
+              type="text"
+              id="codigoPostal"
+              class="form-control"
+              formControlName="codigoPostal">
+          </div>
+
+          <div class="form-group col-md-6">
+            <label for="pais">País</label>
+            <input
+              type="text"
+              id="pais"
+              class="form-control"
+              formControlName="pais">
+          </div>
+        </div>
       </div>
 
       <div class="modal-footer">
-        <button type="button" class="btn-cancel" (click)="closeModal()">
+        <button type="button" class="btn-cancel" (click)="closeModal()" [disabled]="loading">
           Cancelar
         </button>
-        <button type="submit" class="btn-save" [disabled]="!contactForm.valid">
-          {{ isEditing ? 'Actualizar' : 'Guardar' }}
+        <button type="submit" class="btn-save" [disabled]="!contactForm.valid || loading">
+          {{ loading ? 'Guardando...' : (isEditing ? 'Actualizar' : 'Guardar') }}
         </button>
       </div>
     </form>

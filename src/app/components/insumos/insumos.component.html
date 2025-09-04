@@ -1,0 +1,518 @@
+<div class="insumos-container">
+  <!-- Header -->
+  <div class="header-section">
+    <button class="btn btn-secondary volver-button" (click)="volverAlDashboard()">
+      ← Volver
+    </button>
+    <h1 class="page-title">Gestión de Insumos</h1>
+
+    <div class="header-actions">
+      <button
+        class="btn btn-primary refresh-all-btn"
+        (click)="refreshAllSupplies()"
+        [disabled]="isRefreshingAll || isRefreshingTab || isLoading">
+        <span *ngIf="isRefreshingAll" class="spinner"></span>
+        <span *ngIf="!isRefreshingAll">🔄</span>
+        {{ isRefreshingAll ? 'Consultando...' : 'Consultar (Todos)' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  <div class="messages-section" *ngIf="successMessage || errorMessage">
+    <div class="alert alert-success" *ngIf="successMessage">
+      {{ successMessage }}
+    </div>
+    <div class="alert alert-error" *ngIf="errorMessage">
+      {{ errorMessage }}
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs-section">
+    <div class="tabs-header">
+      <div class="tabs">
+        <button
+          class="tab-button"
+          [class.active]="currentTab === TypeSupply.Profile"
+          (click)="switchTab(TypeSupply.Profile)">
+          Perfiles
+        </button>
+        <button
+          class="tab-button"
+          [class.active]="currentTab === TypeSupply.Glass"
+          (click)="switchTab(TypeSupply.Glass)">
+          Vidrios
+        </button>
+        <button
+          class="tab-button"
+          [class.active]="currentTab === TypeSupply.Accessory"
+          (click)="switchTab(TypeSupply.Accessory)">
+          Accesorios
+        </button>
+      </div>
+
+      <button
+        class="btn btn-secondary refresh-tab-btn"
+        (click)="refreshCurrentTab()"
+        [disabled]="isRefreshingTab || isRefreshingAll || isLoading">
+        <span *ngIf="isRefreshingTab" class="spinner"></span>
+        <span *ngIf="!isRefreshingTab">🔄</span>
+        {{ isRefreshingTab ? 'Consultando...' : 'Consultar' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Form Section -->
+  <div class="form-section">
+    <div class="form-card">
+      <div class="form-header">
+        <h3 class="form-title">Crear {{ typeLabels[currentTab] }}</h3>
+        <button
+          type="button"
+          class="toggle-panel-btn"
+          (click)="toggleAddPanel()"
+          title="{{ addPanelCollapsed ? 'Mostrar formulario' : 'Ocultar formulario' }}">
+          {{ addPanelCollapsed ? '▼' : '▲' }}
+        </button>
+      </div>
+
+      <div class="form-content" [class.collapsed]="addPanelCollapsed">
+
+      <form [formGroup]="supplyForm" (ngSubmit)="onSubmit()">
+        <!-- Common Fields -->
+        <div class="form-row">
+          <div class="form-group">
+            <label for="codeSupply">Código *</label>
+            <input
+              id="codeSupply"
+              type="text"
+              class="form-control"
+              formControlName="codeSupply"
+              [class.invalid]="isFieldInvalid('codeSupply')"
+              placeholder="Ingrese el código">
+            <div class="error-message" *ngIf="isFieldInvalid('codeSupply')">
+              {{ getFieldError('codeSupply') }}
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="nameSupply">Nombre *</label>
+            <input
+              id="nameSupply"
+              type="text"
+              class="form-control"
+              formControlName="nameSupply"
+              [class.invalid]="isFieldInvalid('nameSupply')"
+              placeholder="Ingrese el nombre">
+            <div class="error-message" *ngIf="isFieldInvalid('nameSupply')">
+              {{ getFieldError('nameSupply') }}
+            </div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="nameSupplier">Proveedor *</label>
+            <input
+              id="nameSupplier"
+              type="text"
+              class="form-control"
+              formControlName="nameSupplier"
+              [class.invalid]="isFieldInvalid('nameSupplier')"
+              placeholder="Nombre del proveedor">
+            <div class="error-message" *ngIf="isFieldInvalid('nameSupplier')">
+              {{ getFieldError('nameSupplier') }}
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="priceSupply">Precio *</label>
+            <input
+              id="priceSupply"
+              type="number"
+              step="0.01"
+              min="0"
+              class="form-control"
+              formControlName="priceSupply"
+              [class.invalid]="isFieldInvalid('priceSupply')"
+              placeholder="0.00">
+            <div class="error-message" *ngIf="isFieldInvalid('priceSupply')">
+              {{ getFieldError('priceSupply') }}
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="descriptionSupply">Descripción *</label>
+          <textarea
+            id="descriptionSupply"
+            class="form-control"
+            formControlName="descriptionSupply"
+            [class.invalid]="isFieldInvalid('descriptionSupply')"
+            rows="3"
+            placeholder="Descripción del insumo"></textarea>
+          <div class="error-message" *ngIf="isFieldInvalid('descriptionSupply')">
+            {{ getFieldError('descriptionSupply') }}
+          </div>
+        </div>
+
+        <!-- Profile Specific Fields -->
+        <div class="specific-fields" *ngIf="currentTab === TypeSupply.Profile">
+          <h4 class="section-subtitle">Datos del Perfil</h4>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="profileWeigth">Peso (kg)</label>
+              <input
+                id="profileWeigth"
+                type="number"
+                step="0.01"
+                min="0"
+                class="form-control"
+                formControlName="profileWeigth"
+                placeholder="0.00">
+            </div>
+
+            <div class="form-group">
+              <label for="profileHeigth">Altura (mm)</label>
+              <input
+                id="profileHeigth"
+                type="number"
+                min="0"
+                class="form-control"
+                formControlName="profileHeigth"
+                placeholder="0">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="weigthMetro">Peso por Metro (kg/m)</label>
+              <input
+                id="weigthMetro"
+                type="number"
+                step="0.01"
+                min="0"
+                class="form-control"
+                formControlName="weigthMetro"
+                placeholder="0.00">
+            </div>
+
+            <div class="form-group">
+              <label for="profileColor">Color</label>
+              <input
+                id="profileColor"
+                type="text"
+                class="form-control"
+                formControlName="profileColor"
+                placeholder="Color del perfil">
+            </div>
+          </div>
+        </div>
+
+        <!-- Glass Specific Fields -->
+        <div class="specific-fields" *ngIf="currentTab === TypeSupply.Glass">
+          <h4 class="section-subtitle">Datos del Vidrio</h4>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="glassThickness">Espesor (mm)</label>
+              <input
+                id="glassThickness"
+                type="number"
+                step="0.1"
+                min="0"
+                class="form-control"
+                formControlName="glassThickness"
+                placeholder="0.0">
+            </div>
+
+            <div class="form-group">
+              <label for="glassType">Tipo de Vidrio</label>
+              <select
+                id="glassType"
+                class="form-control"
+                formControlName="glassType">
+                <option *ngFor="let type of glassTypeOptions" [value]="type">
+                  {{ GlassTypeLabels[type] }}
+                </option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="glassLength">Largo (mm)</label>
+              <input
+                id="glassLength"
+                type="number"
+                min="0"
+                class="form-control"
+                formControlName="glassLength"
+                placeholder="0">
+            </div>
+
+            <div class="form-group">
+              <label for="glassWidth">Ancho (mm)</label>
+              <input
+                id="glassWidth"
+                type="number"
+                min="0"
+                class="form-control"
+                formControlName="glassWidth"
+                placeholder="0">
+            </div>
+          </div>
+        </div>
+
+        <!-- Accessory Specific Fields -->
+        <div class="specific-fields" *ngIf="currentTab === TypeSupply.Accessory">
+          <h4 class="section-subtitle">Datos del Accesorio</h4>
+
+          <div class="form-group">
+            <label for="descriptionAccessory">Descripción del Accesorio</label>
+            <textarea
+              id="descriptionAccessory"
+              class="form-control"
+              formControlName="descriptionAccessory"
+              rows="3"
+              placeholder="Descripción específica del accesorio"></textarea>
+          </div>
+        </div>
+
+        <!-- Image Upload -->
+        <div class="form-group">
+          <label for="image">Imagen</label>
+          <input
+            id="image"
+            type="file"
+            accept="image/*"
+            class="form-control"
+            (change)="onFileSelected($event)">
+        </div>
+
+        <!-- Submit Button -->
+        <div class="form-actions">
+          <button
+            type="submit"
+            class="btn btn-primary"
+            [disabled]="supplyForm.invalid || isLoading">
+            <span *ngIf="isLoading" class="spinner"></span>
+            {{ isLoading ? 'Creando...' : 'Crear ' + typeLabels[currentTab] }}
+          </button>
+          <button
+            type="button"
+            class="btn btn-secondary"
+            (click)="limpiarFormulario()"
+            [disabled]="isLoading">
+            Limpiar
+          </button>
+        </div>
+      </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Search and Table Section -->
+  <div class="table-section">
+    <div class="table-header">
+      <h3 class="table-title">Listado de {{ typePlurals[currentTab] }}</h3>
+
+      <div class="search-controls">
+        <input
+          type="text"
+          class="search-input"
+          placeholder="Buscar por código o nombre..."
+          [(ngModel)]="searchQuery"
+          (input)="onSearchInput()">
+        <button
+          class="btn btn-secondary clear-search-btn"
+          (click)="clearSearch()"
+          [disabled]="!searchQuery.trim()"
+          title="Limpiar búsqueda">
+          ✕
+        </button>
+      </div>
+    </div>
+
+    <div class="table-wrapper">
+      <table class="data-table" *ngIf="paginatedSupplies.length > 0; else noDataTemplate">
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Nombre</th>
+            <th>Proveedor</th>
+            <th>Precio</th>
+            <th *ngIf="currentTab === TypeSupply.Profile">Color</th>
+            <th *ngIf="currentTab === TypeSupply.Profile">Peso/Metro</th>
+            <th *ngIf="currentTab === TypeSupply.Glass">Tipo</th>
+            <th *ngIf="currentTab === TypeSupply.Glass">Espesor</th>
+            <th>Imagen</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let supply of paginatedSupplies">
+            <td>{{ supply.codeSupply }}</td>
+            <td>{{ supply.nameSupply }}</td>
+            <td>{{ supply.nameSupplier }}</td>
+            <td>{{ supply.priceSupply | currency:'USD':'symbol':'1.2-2' }}</td>
+            <td *ngIf="currentTab === TypeSupply.Profile">{{ getProfileProperty(supply, 'profileColor') }}</td>
+            <td *ngIf="currentTab === TypeSupply.Profile">{{ getProfileProperty(supply, 'weigthMetro') }} kg/m</td>
+            <td *ngIf="currentTab === TypeSupply.Glass">{{ getGlassProperty(supply, 'glassType') }}</td>
+            <td *ngIf="currentTab === TypeSupply.Glass">{{ getGlassProperty(supply, 'glassThickness') }} mm</td>
+            <td>
+              <div class="image-cell">
+                <img
+                  *ngIf="supply.imageUrl"
+                  [src]="supply.imageUrl"
+                  alt="Imagen"
+                  class="supply-thumbnail">
+                <span *ngIf="!supply.imageUrl" class="no-image">Sin imagen</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  class="image-upload"
+                  [id]="'img-' + supply.codeSupply"
+                  (change)="onImageFileSelected($event, supply)">
+                <label [for]="'img-' + supply.codeSupply" class="upload-label">
+                  📷
+                </label>
+              </div>
+            </td>
+            <td>
+              <div class="action-buttons">
+                <button
+                  class="btn btn-sm btn-secondary"
+                  (click)="openEditPrice(supply)"
+                  [disabled]="isRowLoading(supply.codeSupply)"
+                  title="Editar precio">
+                  <span *ngIf="isRowLoading(supply.codeSupply)" class="spinner-sm"></span>
+                  <span *ngIf="!isRowLoading(supply.codeSupply)">💰</span>
+                </button>
+                <button
+                  class="btn btn-sm btn-secondary"
+                  (click)="openEditDescription(supply)"
+                  [disabled]="isRowLoading(supply.codeSupply)"
+                  title="Editar descripción">
+                  <span *ngIf="isRowLoading(supply.codeSupply)" class="spinner-sm"></span>
+                  <span *ngIf="!isRowLoading(supply.codeSupply)">📝</span>
+                </button>
+                <button
+                  class="btn btn-sm btn-danger"
+                  (click)="deleteSupply(supply)"
+                  [disabled]="isRowLoading(supply.codeSupply)"
+                  title="Eliminar">
+                  <span *ngIf="isRowLoading(supply.codeSupply)" class="spinner-sm"></span>
+                  <span *ngIf="!isRowLoading(supply.codeSupply)">🗑️</span>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <ng-template #noDataTemplate>
+        <div class="no-data">
+          <p>No se encontraron {{ typePlurals[currentTab].toLowerCase() }}</p>
+        </div>
+      </ng-template>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination" *ngIf="totalPages > 1">
+      <button
+        class="pagination-btn"
+        [disabled]="currentPage <= 1"
+        (click)="onPageChange(currentPage - 1)">
+        ← Anterior
+      </button>
+
+      <span class="page-info">
+        Página {{ currentPage }} de {{ totalPages }}
+      </span>
+
+      <button
+        class="pagination-btn"
+        [disabled]="currentPage >= totalPages"
+        (click)="onPageChange(currentPage + 1)">
+        Siguiente →
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Price Modal -->
+<div class="modal-overlay" *ngIf="showEditPriceModal" (click)="closeEditPriceModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h4>Editar Precio</h4>
+      <button class="modal-close" (click)="closeEditPriceModal()">×</button>
+    </div>
+
+    <form [formGroup]="editPriceForm" (ngSubmit)="onEditPrice()">
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="editPrice">Nuevo Precio *</label>
+          <input
+            id="editPrice"
+            type="number"
+            step="0.01"
+            min="0"
+            class="form-control"
+            formControlName="priceSupply"
+            [class.invalid]="isFieldInvalid('priceSupply', editPriceForm)">
+          <div class="error-message" *ngIf="isFieldInvalid('priceSupply', editPriceForm)">
+            {{ getFieldError('priceSupply', editPriceForm) }}
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeEditPriceModal()">
+          Cancelar
+        </button>
+        <button type="submit" class="btn btn-primary" [disabled]="editPriceForm.invalid || (editingSupply && isRowLoading(editingSupply.codeSupply))">
+          {{ (editingSupply && isRowLoading(editingSupply.codeSupply)) ? 'Guardando...' : 'Guardar' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Edit Description Modal -->
+<div class="modal-overlay" *ngIf="showEditDescriptionModal" (click)="closeEditDescriptionModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h4>Editar Descripción</h4>
+      <button class="modal-close" (click)="closeEditDescriptionModal()">×</button>
+    </div>
+
+    <form [formGroup]="editDescriptionForm" (ngSubmit)="onEditDescription()">
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="editDescription">Nueva Descripción *</label>
+          <textarea
+            id="editDescription"
+            class="form-control"
+            formControlName="descriptionSupply"
+            [class.invalid]="isFieldInvalid('descriptionSupply', editDescriptionForm)"
+            rows="4"></textarea>
+          <div class="error-message" *ngIf="isFieldInvalid('descriptionSupply', editDescriptionForm)">
+            {{ getFieldError('descriptionSupply', editDescriptionForm) }}
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeEditDescriptionModal()">
+          Cancelar
+        </button>
+        <button type="submit" class="btn btn-primary" [disabled]="editDescriptionForm.invalid || (editingSupply && isRowLoading(editingSupply.codeSupply))">
+          {{ (editingSupply && isRowLoading(editingSupply.codeSupply)) ? 'Guardando...' : 'Guardar' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

@@ -1,8 +1,27 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpErrorResponse, HttpResponse } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError, BehaviorSubject } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { Router } from '@angular/router';
+
+export interface User {
+  id: string;
+  name: string;
+  userName: string;
+  userEmail: string;
+  phoneNumber: string;
+  isEmailConfirmed: boolean;
+}
+
+export interface LoginResponse {
+  token: string;
+  user: User;
+}
+
+export interface Session {
+  token: string;
+  user: User;
+}
 
 @Injectable({
   providedIn: 'root'
@@ -12,23 +31,31 @@ export class AuthService {
   private registerUrl = '/api/registroUsuario';
   private confirmEmailUrl = '/api/confirm-email';
   private tokenKey = 'auth_token';
-  private isAuthenticatedSubject = new BehaviorSubject<boolean>(this.hasToken());
-  
-  constructor(private http: HttpClient, private router: Router) {}
+  private userKey = 'auth_user';
 
-  login(loginData: { userName: string, password: string }): Observable<any> {
-    return this.http.post(this.loginUrl, loginData).pipe(
-      map((response: any) => {
-        if (response && response.token) {
-          this.setToken(response.token);
-          this.isAuthenticatedSubject.next(true);
-          return response;
+  private currentUserSubject = new BehaviorSubject<User | null>(null);
+  private isAuthenticatedSubject = new BehaviorSubject<boolean>(false);
+
+  public currentUser$ = this.currentUserSubject.asObservable();
+  public isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
+
+  constructor(private http: HttpClient, private router: Router) {
+    this.hydrateFromStorage();
+  }
+
+  login(loginData: { userName: string, password: string }, rememberMe: boolean = true): Observable<LoginResponse> {
+    return this.http.post<LoginResponse>(this.loginUrl, loginData).pipe(
+      map((response: LoginResponse) => {
+        if (response && response.token && response.user) {
+          const sanitizedUser = this.sanitizeUser(response.user);
+          this.setSession({ token: response.token, user: sanitizedUser }, rememberMe ? 'local' : 'session');
+          return { token: response.token, user: sanitizedUser };
         }
-        throw new Error('No token received');
+        throw new Error('No token or user received');
       }),
       catchError((error: HttpErrorResponse) => {
         if (error.status === 401) {
-          return throwError(() => 'Credenciales incorretas');
+          return throwError(() => 'Credenciales incorrectas');
         } else if (error.status === 403 || error.status === 500) {
           const errorMessage = error.error?.message || 'Error del servidor';
           return throwError(() => errorMessage);
@@ -68,16 +95,83 @@ export class AuthService {
     );
   }
 
-  private setToken(token: string): void {
-    localStorage.setItem(this.tokenKey, token);
+  private sanitizeUser(user: any): User {
+    return {
+      id: user.id,
+      name: user.name,
+      userName: user.userName,
+      userEmail: user.userEmail,
+      phoneNumber: user.phoneNumber,
+      isEmailConfirmed: user.isEmailConfirmed
+    };
+  }
+
+  setSession(session: Session, persist: 'local' | 'session' = 'local'): void {
+    console.log('Guardando sesión:', { user: session.user, persist });
+    const storage = persist === 'local' ? localStorage : sessionStorage;
+    storage.setItem(this.tokenKey, session.token);
+    storage.setItem(this.userKey, JSON.stringify(session.user));
+
+    // Actualizar los subjects con los nuevos datos
+    this.currentUserSubject.next(session.user);
+    this.isAuthenticatedSubject.next(true);
+    console.log('Usuario guardado en memoria:', session.user);
+  }
+
+  getSession(): Session | null {
+    let token = localStorage.getItem(this.tokenKey);
+    let userStr = localStorage.getItem(this.userKey);
+
+    if (!token || !userStr) {
+      token = sessionStorage.getItem(this.tokenKey);
+      userStr = sessionStorage.getItem(this.userKey);
+    }
+
+    if (token && userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        return { token, user };
+      } catch {
+        this.clearSession();
+        return null;
+      }
+    }
+
+    return null;
   }
 
   getToken(): string | null {
-    return localStorage.getItem(this.tokenKey);
+    const session = this.getSession();
+    return session?.token || null;
   }
 
-  private hasToken(): boolean {
-    return !!this.getToken();
+  getCurrentUser(): User | null {
+    return this.currentUserSubject.value;
+  }
+
+  getCurrentUserObservable(): Observable<User | null> {
+    return this.currentUser$;
+  }
+
+  private clearSession(): void {
+    localStorage.removeItem(this.tokenKey);
+    localStorage.removeItem(this.userKey);
+    sessionStorage.removeItem(this.tokenKey);
+    sessionStorage.removeItem(this.userKey);
+  }
+
+  hydrateFromStorage(): void {
+    console.log('Hidratando desde storage...');
+    const session = this.getSession();
+    if (session && session.user) {
+      console.log('Sesión encontrada, hidratando usuario:', session.user);
+      this.currentUserSubject.next(session.user);
+      this.isAuthenticatedSubject.next(true);
+    } else {
+      console.log('No hay sesión válida en storage');
+      this.currentUserSubject.next(null);
+      this.isAuthenticatedSubject.next(false);
+    }
   }
 
   isAuthenticated(): Observable<boolean> {
@@ -85,24 +179,17 @@ export class AuthService {
   }
 
   logout(): void {
-    localStorage.removeItem(this.tokenKey);
+    this.clearSession();
+    this.currentUserSubject.next(null);
     this.isAuthenticatedSubject.next(false);
     this.router.navigate(['/login']);
   }
 
   checkAuthStatus(): void {
-    const token = this.getToken();
-    this.isAuthenticatedSubject.next(!!token);
-    if (!token) {
+    this.hydrateFromStorage();
+    if (!this.getToken()) {
       this.router.navigate(['/login']);
     }
-  }
-
-  getCurrentUser(): Observable<any> {
-    return new Observable(observer => {
-      observer.next({ name: 'Usuario' });
-      observer.complete();
-    });
   }
 
   getCurrentCompany(): Observable<any> {

@@ -2,10 +2,16 @@
   <div class="dashboard-header">
     <div class="welcome-section">
       <h1 class="welcome-title">¡Bienvenido, {{ currentUser }}!</h1>
-      <p class="company-name">{{ currentCompany }}</p>
+      <p class="company-name">ED Gestión</p>
     </div>
-    <div class="date-section">
-      <p class="current-date">{{ currentDate | date:'fullDate':'es-AR' }}</p>
+    <div class="header-actions">
+      <div class="date-section">
+        <p class="current-date">{{ currentDate | date:'fullDate':'es-AR' }}</p>
+      </div>
+      <button class="logout-button" (click)="logout()" title="Cerrar sesión">
+        <span class="logout-icon">🚪</span>
+        <span class="logout-text">Cerrar Sesión</span>
+      </button>
     </div>
   </div>
 
@@ -13,11 +19,11 @@
     <div class="stats-grid">
       <div class="stat-card sales-card">
         <div class="stat-icon">
-          💰
+          👥
         </div>
         <div class="stat-content">
-          <h3 class="stat-title">Importe Vendido</h3>
-          <p class="stat-value">{{ formatCurrency(dashboardData.importeVendido) }}</p>
+          <h3 class="stat-title">Contactos</h3>
+          <p class="stat-value">{{ formatNumber(dashboardData.contactos) }}</p>
         </div>
       </div>
 
@@ -26,18 +32,18 @@
           📦
         </div>
         <div class="stat-content">
-          <h3 class="stat-title">Productos en Stock</h3>
-          <p class="stat-value">{{ formatNumber(dashboardData.productosEnStock) }}</p>
+          <h3 class="stat-title">Productos</h3>
+          <p class="stat-value">{{ formatNumber(dashboardData.productos) }}</p>
         </div>
       </div>
 
       <div class="stat-card valuation-card">
         <div class="stat-icon">
-          📊
+          🔧
         </div>
         <div class="stat-content">
-          <h3 class="stat-title">Valorización del Stock</h3>
-          <p class="stat-value">{{ formatCurrency(dashboardData.valorizacionStock) }}</p>
+          <h3 class="stat-title">Insumos</h3>
+          <p class="stat-value">{{ formatNumber(dashboardData.insumos) }}</p>
         </div>
       </div>
     </div>
@@ -50,17 +56,17 @@
           <span class="action-text">Ver Productos</span>
         </a>
 
-        <a routerLink="/sales" class="action-button">
+        <!-- <a routerLink="/sales" class="action-button">
           <span class="action-icon">💳</span>
           <span class="action-text">Ver Ventas</span>
-        </a>
+        </a> -->
 
         <a routerLink="/stock-movements" class="action-button">
           <span class="action-icon">📋</span>
           <span class="action-text">Movimientos</span>
         </a>
 
-        <a routerLink="/contacts" class="action-button">
+         <a routerLink="/contacts" class="action-button">
           <span class="action-icon">👥</span>
           <span class="action-text">Contactos</span>
         </a>
@@ -68,6 +74,11 @@
         <a routerLink="/presupuestar" class="action-button presupuestar-button">
           <span class="action-icon">💰</span>
           <span class="action-text">Presupuestar</span>
+        </a>
+
+        <a routerLink="/insumos" class="action-button">
+          <span class="action-icon">🔧</span>
+          <span class="action-text">Insumos</span>
         </a>
       </div>
     </div>

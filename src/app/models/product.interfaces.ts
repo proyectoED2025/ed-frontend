@@ -9,13 +9,30 @@ export interface Product {
   imageUrl?: string;
 }
 
+export enum ProductType {
+  Ventana = 0,
+  Puerta = 1,
+  Mampara = 2,
+  Batiente = 3,
+  Tabaquera = 4,
+  Proyectante = 5,
+  Fijo = 6
+}
+
+export interface SupplyNecessaryDto {
+  codeSupply: string;
+  quantity: number;
+}
+
 export interface ProductDto {
-  name: string;
-  description: string;
-  price: number;
-  category: string;
   codeProduct: string;
-  image?: File;
+  productName: string;
+  productDescription: string;
+  productCategory: ProductType;
+  productPrice: number;
+  Image?: File | null;
+  imageUrl?: string | null;
+  supplies: SupplyNecessaryDto[];
 }
 
 export interface UpdateDescriptionProductDto {
