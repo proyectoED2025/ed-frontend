@@ -4,12 +4,13 @@ import { Observable, throwError, BehaviorSubject } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 import { AuthService } from './authService';
 import { BudgetCreateDto, BudgetItem } from '../models/budget.interfaces';
+import { buildApiUrl } from '../core/api-url';
+import { API_ROUTES } from '../core/api-routes';
 
 @Injectable({
   providedIn: 'root'
 })
 export class PresupuestoService {
-  private apiUrl = '/api/crearPresupuesto';
   private draftKey = 'presupuesto_draft';
   private lastBudgetSubject = new BehaviorSubject<any>(null);
   public lastBudget$ = this.lastBudgetSubject.asObservable();
@@ -25,7 +26,7 @@ export class PresupuestoService {
       'Authorization': `Bearer ${token}`
     });
 
-    return this.http.post(this.apiUrl, dto, { headers }).pipe(
+    return this.http.post(buildApiUrl(API_ROUTES.CREAR_PRESUPUESTO), dto, { headers }).pipe(
       tap(response => {
         this.lastBudgetSubject.next(response);
         this.clearDraft();

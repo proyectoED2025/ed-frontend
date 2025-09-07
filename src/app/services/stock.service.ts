@@ -2,6 +2,8 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { catchError } from 'rxjs/operators';
+import { buildApiUrl } from '../core/api-url';
+import { API_ROUTES } from '../core/api-routes';
 
 export interface StockMovementDto {
   codeSupply: string;
@@ -39,7 +41,7 @@ export class StockService {
   constructor(private http: HttpClient) { }
 
   getMovements(): Observable<StockMovementDto[]> {
-    return this.http.get<StockMovementDto[]>('/api/verMovimientosStock');
+    return this.http.get<StockMovementDto[]>(buildApiUrl(API_ROUTES.VER_MOVIMIENTOS_STOCK));
   }
 
   getStockMovements(params: {
@@ -75,6 +77,6 @@ export class StockService {
       httpParams = httpParams.set('sortDir', params.sortDir);
     }
 
-    return this.http.get<PagedResult<StockMovementListItem>>('/api/stock/movements', { params: httpParams });
+    return this.http.get<PagedResult<StockMovementListItem>>(buildApiUrl(API_ROUTES.STOCK.MOVEMENTS), { params: httpParams });
   }
 }

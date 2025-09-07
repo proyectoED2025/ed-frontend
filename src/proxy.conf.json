@@ -1,6 +1,6 @@
 {
   "/api/*": {
-    "target": "https://localhost:7241",
+    "target": "https://api.edaberturas.lat",
     "secure": false,
     "changeOrigin": true,
     "logLevel": "debug",

@@ -4,6 +4,8 @@ import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { AuthService } from './authService';
 import { Product, ProductDto, UpdateDescriptionProductDto, UpdateImageProductDto, Supply, ProductMovement } from '../models/product.interfaces';
+import { buildApiUrl, buildApiUrlWithParams } from '../core/api-url';
+import { API_ROUTES } from '../core/api-routes';
 
 @Injectable({
   providedIn: 'root'
@@ -28,35 +30,35 @@ export class CommonService {
 
   // Productos endpoints
   crearProducto(form: FormData): Observable<void> {
-    return this.http.post<void>('/api/crearProducto', form).pipe(catchError(this.handleError));
+    return this.http.post<void>(buildApiUrl(API_ROUTES.CREAR_PRODUCTO), form).pipe(catchError(this.handleError));
   }
 
   eliminarProducto(codeProduct: string): Observable<string | void> {
-    return this.http.delete<string | void>(`/api/eliminarProducto?codeProduct=${codeProduct}`).pipe(catchError(this.handleError));
+    return this.http.delete<string | void>(buildApiUrlWithParams(API_ROUTES.ELIMINAR_PRODUCTO, { codeProduct })).pipe(catchError(this.handleError));
   }
 
   actualizarDescripcionProducto(payload: UpdateDescriptionProductDto): Observable<void> {
-    return this.http.put<void>('/api/actualizarDescripcionProducto', payload).pipe(catchError(this.handleError));
+    return this.http.put<void>(buildApiUrl(API_ROUTES.ACTUALIZAR_DESCRIPCION_PRODUCTO), payload).pipe(catchError(this.handleError));
   }
 
   actualizarImagenProducto(form: FormData): Observable<void> {
-    return this.http.put<void>('/api/actualizarImagenProducto', form).pipe(catchError(this.handleError));
+    return this.http.put<void>(buildApiUrl(API_ROUTES.ACTUALIZAR_IMAGEN_PRODUCTO), form).pipe(catchError(this.handleError));
   }
 
   obtenerProductos(): Observable<ProductDto[]> {
-    return this.http.get<ProductDto[]>('/api/obtenerProductos').pipe(catchError(this.handleError));
+    return this.http.get<ProductDto[]>(buildApiUrl(API_ROUTES.OBTENER_PRODUCTOS)).pipe(catchError(this.handleError));
   }
 
   obtenerProducto(codeProduct: string): Observable<Product> {
-    return this.http.get<Product>(`/api/obtenerProducto?codeProduct=${codeProduct}`).pipe(catchError(this.handleError));
+    return this.http.get<Product>(buildApiUrlWithParams(API_ROUTES.OBTENER_PRODUCTO, { codeProduct })).pipe(catchError(this.handleError));
   }
 
   obtenerInsumosDelProducto(codeProduct: string): Observable<Supply[]> {
-    return this.http.post<Supply[]>(`/api/obtenerInsumosDelProducto?codeProduct=${codeProduct}`, null).pipe(catchError(this.handleError));
+    return this.http.post<Supply[]>(buildApiUrlWithParams(API_ROUTES.OBTENER_INSUMOS_PRODUCTO, { codeProduct }), null).pipe(catchError(this.handleError));
   }
 
   obtenerMovimientos(): Observable<ProductMovement[]> {
-    return this.http.get<ProductMovement[]>('/api/obtenerMovimientos').pipe(catchError(this.handleError));
+    return this.http.get<ProductMovement[]>(buildApiUrl(API_ROUTES.OBTENER_MOVIMIENTOS)).pipe(catchError(this.handleError));
   }
 
   // Legacy endpoints (mantener compatibilidad)
@@ -65,14 +67,14 @@ export class CommonService {
   }
 
   getSalesList(): Observable<any[]> {
-    return this.http.get<any[]>('/api/sales');
+    return this.http.get<any[]>(buildApiUrl(API_ROUTES.SALES));
   }
 
   getStockMovements(): Observable<any[]> {
-    return this.http.get<any[]>('/api/stock-movements');
+    return this.http.get<any[]>(buildApiUrl(API_ROUTES.STOCK_MOVEMENTS));
   }
 
   getDashboardData(): Observable<any> {
-    return this.http.get<any>('/api/resumen').pipe(catchError(this.handleError));
+    return this.http.get<any>(buildApiUrl(API_ROUTES.RESUMEN)).pipe(catchError(this.handleError));
   }
 }

@@ -2,6 +2,8 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, BehaviorSubject, of } from 'rxjs';
 import { tap, catchError } from 'rxjs/operators';
+import { buildApiUrl, buildApiUrlWithParams } from '../core/api-url';
+import { API_ROUTES } from '../core/api-routes';
 import {
   ProfileDto,
   GlassDto,
@@ -33,7 +35,7 @@ export class InsumosService {
   constructor(private http: HttpClient) {}
 
   addProfile(fd: FormData): Observable<any> {
-    return this.http.post(`/api/altaPerfil`, fd).pipe(
+    return this.http.post(buildApiUrl(API_ROUTES.ALTA_PERFIL), fd).pipe(
       tap(() => this.refreshProfiles()),
       catchError(error => {
         console.error('Error adding profile:', error);
@@ -43,7 +45,7 @@ export class InsumosService {
   }
 
   addGlass(fd: FormData): Observable<any> {
-    return this.http.post(`/api/altaVidrio`, fd).pipe(
+    return this.http.post(buildApiUrl(API_ROUTES.ALTA_VIDRIO), fd).pipe(
       tap(() => this.refreshGlasses()),
       catchError(error => {
         console.error('Error adding glass:', error);
@@ -53,7 +55,7 @@ export class InsumosService {
   }
 
   addAccessory(fd: FormData): Observable<any> {
-    return this.http.post(`/api/altaAccesorio`, fd).pipe(
+    return this.http.post(buildApiUrl(API_ROUTES.ALTA_ACCESORIO), fd).pipe(
       tap(() => this.refreshAccessories()),
       catchError(error => {
         console.error('Error adding accessory:', error);
@@ -63,7 +65,7 @@ export class InsumosService {
   }
 
   deleteSupply(payload: DeleteSupplyDto): Observable<any> {
-    return this.http.delete(`/api/bajaInsumo`, { body: payload }).pipe(
+    return this.http.delete(buildApiUrl(API_ROUTES.BAJA_INSUMO), { body: payload }).pipe(
       tap(() => this.refreshCacheByType(payload.type)),
       catchError(error => {
         console.error('Error deleting supply:', error);
@@ -73,7 +75,7 @@ export class InsumosService {
   }
 
   updateDescription(payload: EditSupplyDto): Observable<any> {
-    return this.http.put(`/api/editarDescripcionInsumo`, payload).pipe(
+    return this.http.put(buildApiUrl(API_ROUTES.EDITAR_DESCRIPCION_INSUMO), payload).pipe(
       tap(() => this.refreshCacheByType(payload.type)),
       catchError(error => {
         console.error('Error updating description:', error);
@@ -83,7 +85,7 @@ export class InsumosService {
   }
 
   updatePrice(payload: EditPriceSupplyDto): Observable<any> {
-    return this.http.put(`/api/editarPrecioInsumo`, payload).pipe(
+    return this.http.put(buildApiUrl(API_ROUTES.EDITAR_PRECIO_INSUMO), payload).pipe(
       tap(() => this.refreshCacheByType(payload.type)),
       catchError(error => {
         console.error('Error updating price:', error);
@@ -93,7 +95,7 @@ export class InsumosService {
   }
 
   updateImage(fd: FormData): Observable<any> {
-    return this.http.put(`/api/editarImagenInsumo`, fd).pipe(
+    return this.http.put(buildApiUrl(API_ROUTES.EDITAR_IMAGEN_INSUMO), fd).pipe(
       tap(() => {
         const type = fd.get('type');
         if (type) {
@@ -108,7 +110,7 @@ export class InsumosService {
   }
 
   getAllSupplies(): Observable<SupplyBase[]> {
-    return this.http.get<SupplyBase[]>('/api/insumos').pipe(
+    return this.http.get<SupplyBase[]>(buildApiUrl(API_ROUTES.INSUMOS)).pipe(
       tap((supplies) => {
         // Distribute supplies by type into caches
         const profiles: SupplyBase[] = [];
@@ -142,7 +144,7 @@ export class InsumosService {
   }
 
   getByType(type: TypeSupplyValue): Observable<SupplyBase[]> {
-    return this.http.get<SupplyBase[]>(`/api/insumos?type=${type}`).pipe(
+    return this.http.get<SupplyBase[]>(buildApiUrlWithParams(API_ROUTES.INSUMOS, { type })).pipe(
       tap((supplies) => {
         // Update only the specific type cache
         switch (this.getTypeAsEnum(type)) {
