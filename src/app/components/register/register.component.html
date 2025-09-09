@@ -65,7 +65,6 @@
           class="form-control"
           [(ngModel)]="data.phoneNumber"
           required
-          placeholder="091234567"
           #phoneInput="ngModel"
           [ngClass]="{ 'is-invalid': submitted && (!isPhoneValid() || phoneInput.invalid) }"
         />
@@ -76,18 +75,56 @@
 
       <div class="mb-3">
         <label for="password" class="form-label">Contraseña</label>
-        <input
-          type="password"
-          id="password"
-          name="password"
-          class="form-control"
-          [(ngModel)]="data.password"
-          required
-          #passwordInput="ngModel"
-          [ngClass]="{ 'is-invalid': submitted && (!isPasswordValid() || passwordInput.invalid) }"
-        />
+        <div class="input-group">
+          <input
+            [type]="showPassword ? 'text' : 'password'"
+            id="password"
+            name="password"
+            class="form-control"
+            [(ngModel)]="data.password"
+            required
+            #passwordInput="ngModel"
+            [ngClass]="{ 'is-invalid': submitted && (!isPasswordValid() || passwordInput.invalid) }"
+          />
+          <button
+            type="button"
+            class="btn btn-outline-secondary password-toggle"
+            (click)="togglePasswordVisibility()"
+            tabindex="-1"
+          >
+            <i [class]="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+          </button>
+        </div>
         <div *ngIf="submitted && (!isPasswordValid() || passwordInput.invalid)" class="invalid-feedback">
           Contraseña debe tener entre 6 y 10 caracteres
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label for="confirmPassword" class="form-label">Repetir contraseña</label>
+        <div class="input-group">
+          <input
+            [type]="showConfirmPassword ? 'text' : 'password'"
+            id="confirmPassword"
+            name="confirmPassword"
+            class="form-control"
+            [(ngModel)]="data.confirmPassword"
+            required
+            #confirmPasswordInput="ngModel"
+            [ngClass]="{ 'is-invalid': submitted && (!isPasswordsMatching() || confirmPasswordInput.invalid) }"
+          />
+          <button
+            type="button"
+            class="btn btn-outline-secondary password-toggle"
+            (click)="toggleConfirmPasswordVisibility()"
+            tabindex="-1"
+          >
+            <i [class]="showConfirmPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+          </button>
+        </div>
+        <div *ngIf="submitted && (!isPasswordsMatching() || confirmPasswordInput.invalid)" class="invalid-feedback">
+          <span *ngIf="!confirmPasswordInput.value">Confirmación de contraseña requerida</span>
+          <span *ngIf="confirmPasswordInput.value && !isPasswordsMatching()">Las contraseñas no coinciden</span>
         </div>
       </div>
 

@@ -3,6 +3,8 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError, BehaviorSubject } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { Router } from '@angular/router';
+import { buildApiUrl } from '../core/api-url';
+import { API_ROUTES } from '../core/api-routes';
 
 export interface User {
   id: string;
@@ -27,9 +29,6 @@ export interface Session {
   providedIn: 'root'
 })
 export class AuthService {
-  private loginUrl = '/api/loginUsuario';
-  private registerUrl = '/api/registroUsuario';
-  private confirmEmailUrl = '/api/confirm-email';
   private tokenKey = 'auth_token';
   private userKey = 'auth_user';
 
@@ -44,7 +43,7 @@ export class AuthService {
   }
 
   login(loginData: { userName: string, password: string }, rememberMe: boolean = true): Observable<LoginResponse> {
-    return this.http.post<LoginResponse>(this.loginUrl, loginData).pipe(
+    return this.http.post<LoginResponse>(buildApiUrl(API_ROUTES.LOGIN), loginData).pipe(
       map((response: LoginResponse) => {
         if (response && response.token && response.user) {
           const sanitizedUser = this.sanitizeUser(response.user);
@@ -56,23 +55,22 @@ export class AuthService {
       catchError((error: HttpErrorResponse) => {
         if (error.status === 401) {
           return throwError(() => 'Credenciales incorrectas');
-        } else if (error.status === 403 || error.status === 500) {
-          const errorMessage = error.error?.message || 'Error del servidor';
+        } else  {
+          const errorMessage = error?.error?.message || 'Error del servidor';
           return throwError(() => errorMessage);
         }
-        return throwError(() => 'Error desconocido');
       })
     );
   }
   register(registerData: { name: string, userEmail: string, userName: string, phoneNumber: string, password: string }): Observable<any> {
-    return this.http.post(this.registerUrl, registerData, { responseType: 'text' }).pipe(
+    return this.http.post(buildApiUrl(API_ROUTES.REGISTER), registerData, { responseType: 'text' }).pipe(
       map((response: any) => {
         return response;
       }),
       catchError((error: HttpErrorResponse) => {
         if (error.status === 401) {
           return throwError(() => 'El correo ya está registrado.');
-        } else if (error.status === 400) {
+        } else {
           const errorMessage = error.error?.message || 'Datos inválidos';
           return throwError(() => errorMessage);
         }
@@ -82,7 +80,7 @@ export class AuthService {
   }
 
   confirmEmail(token: string): Observable<any> {
-    return this.http.post(this.confirmEmailUrl, { token }, { responseType: 'text' }).pipe(
+    return this.http.post(buildApiUrl(API_ROUTES.CONFIRM_EMAIL), { token }, { responseType: 'text' }).pipe(
       catchError((error: HttpErrorResponse) => {
         if (error.status === 400) {
           return throwError(() => 'Token es invalido o se expiro');

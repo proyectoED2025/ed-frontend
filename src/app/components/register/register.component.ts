@@ -18,12 +18,15 @@ export class RegisterComponent {
     userEmail: '',
     userName: '',
     phoneNumber: '',
-    password: ''
+    password: '',
+    confirmPassword: ''
   };
 
   error: string | null = null;
   success: string | null = null;
   submitted = false;
+  showPassword = false;
+  showConfirmPassword = false;
 
   constructor(private authService: AuthService, private router: Router) {}
 
@@ -34,7 +37,9 @@ export class RegisterComponent {
 
     if (!this.isFormValid()) return;
 
-    this.authService.register(this.data).subscribe({
+    const { confirmPassword, ...dataToSend } = this.data;
+
+    this.authService.register(dataToSend).subscribe({
       next: (response) => {
         this.success = 'Usuario registrado correctamente.';
         setTimeout(() => {
@@ -54,9 +59,11 @@ export class RegisterComponent {
       this.data.userName &&
       this.data.phoneNumber &&
       this.data.password &&
+      this.data.confirmPassword &&
       this.isEmailValid() &&
       this.isPasswordValid() &&
-      this.isPhoneValid()
+      this.isPhoneValid() &&
+      this.isPasswordsMatching()
     );
   }
 
@@ -72,6 +79,18 @@ export class RegisterComponent {
   isPhoneValid(): boolean {
     const phoneRegex = /^09\d{7}$/;
     return phoneRegex.test(this.data.phoneNumber);
+  }
+
+  isPasswordsMatching(): boolean {
+    return this.data.password === this.data.confirmPassword;
+  }
+
+  togglePasswordVisibility(): void {
+    this.showPassword = !this.showPassword;
+  }
+
+  toggleConfirmPasswordVisibility(): void {
+    this.showConfirmPassword = !this.showConfirmPassword;
   }
 
   goToLogin(): void {
