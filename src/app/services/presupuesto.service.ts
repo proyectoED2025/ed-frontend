@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpErrorResponse, HttpResponse } from '@angular/common/http';
 import { Observable, throwError, BehaviorSubject } from 'rxjs';
-import { catchError, tap } from 'rxjs/operators';
+import { catchError, tap, switchMap } from 'rxjs/operators';
 import { AuthService } from './authService';
 import { BudgetCreateDto, BudgetItem } from '../models/budget.interfaces';
 import { buildApiUrl } from '../core/api-url';
@@ -19,28 +19,37 @@ export class PresupuestoService {
     this.loadDraft();
   }
 
-  crearPresupuesto(dto: BudgetCreateDto): Observable<any> {
+  // ---------- NUEVO: headers con token ----------
+  private getAuthHeaders(): HttpHeaders {
     const token = this.authService.getToken();
-    const headers = new HttpHeaders({
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    });
+    let headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+    if (token) headers = headers.set('Authorization', `Bearer ${token}`);
+    return headers;
+  }
 
+  crearPresupuesto(dto: BudgetCreateDto): Observable<any> {
+    const headers = this.getAuthHeaders();
     return this.http.post(buildApiUrl(API_ROUTES.CREAR_PRESUPUESTO), dto, { headers }).pipe(
-      tap(response => {
-        this.lastBudgetSubject.next(response);
+      tap((response: any) => {
+        const normalized = { ...response, id: response?.id ?? response?.Id }; // 👈 normaliza
+        this.lastBudgetSubject.next(normalized);
         this.clearDraft();
       }),
       catchError((error: HttpErrorResponse) => {
+        // 👇 agrega 'mensaje' (tu controller devuelve { mensaje: ... })
         if (error.status === 400) {
-          const errorMessage = error.error?.message || error.error?.BudgetException || 'Datos inválidos';
+          const errorMessage =
+            error.error?.mensaje ||
+            error.error?.message ||
+            error.error?.BudgetException ||
+            'Datos inválidos';
           return throwError(() => errorMessage);
         } else if (error.status === 401) {
           return throwError(() => 'No autorizado. Por favor, inicie sesión nuevamente.');
         } else if (error.status === 403) {
           return throwError(() => 'No tiene permisos para crear presupuestos');
         } else if (error.status === 500) {
-          const errorMessage = error.error?.message || 'Error del servidor';
+          const errorMessage = error.error?.mensaje || error.error?.message || 'Error del servidor';
           return throwError(() => errorMessage);
         }
         return throwError(() => 'Error desconocido al crear el presupuesto');
@@ -48,6 +57,40 @@ export class PresupuestoService {
     );
   }
 
+  // ---------- NUEVO: GET del PDF ----------
+  descargarPresupuestoPdf(id: number): Observable<HttpResponse<Blob>> {
+    const headers = this.getAuthHeaders();
+    return this.http.get(buildApiUrl(API_ROUTES.PDF(id)), {
+      headers,
+      observe: 'response',
+      responseType: 'blob'
+    });
+  }
+
+  // ---------- NUEVO: helper para guardar la respuesta como archivo ----------
+  saveHttpResponseAsFile(resp: HttpResponse<Blob>, fallbackName: string): void {
+    let filename = fallbackName;
+    const cd = resp.headers.get('content-disposition');
+    const match = cd?.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/i);
+    if (match?.[1]) filename = match[1].replaceAll('"', '');
+
+    const blob = new Blob([resp.body!], { type: 'application/pdf' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; a.click();
+    window.URL.revokeObjectURL(url);
+  }
+
+  // ---------- NUEVO (opcional): crear y descargar en un solo paso ----------
+  crearYDescargarPresupuesto(dto: BudgetCreateDto): Observable<HttpResponse<Blob>> {
+    let newId = 0;
+    return this.crearPresupuesto(dto).pipe(
+      tap((r: any) => { newId = r?.id; }),
+      switchMap(() => this.descargarPresupuestoPdf(newId))
+    );
+  }
+
+  // ========== borrador (lo tuyo, sin cambios) ==========
   saveDraft(cliente: any, items: BudgetItem[]): void {
     const draft = { cliente, items, timestamp: new Date().toISOString() };
     localStorage.setItem(this.draftKey, JSON.stringify(draft));
@@ -58,7 +101,6 @@ export class PresupuestoService {
     if (draftStr) {
       try {
         const draft = JSON.parse(draftStr);
-        // Verificar que el borrador no tenga más de 24 horas
         const draftDate = new Date(draft.timestamp);
         const now = new Date();
         const hoursDiff = (now.getTime() - draftDate.getTime()) / (1000 * 60 * 60);

@@ -245,6 +245,11 @@ export class PresupuestadorComponent implements OnInit, OnDestroy {
   }
 
   grabarPresupuesto() {
+    // limpiar mensajes
+    this.error = null;
+    this.success = null;
+
+    // validaciones
     if (!this.canSubmit()) {
       if (!this.selectedContacto) {
         this.error = 'Por favor, seleccione un cliente';
@@ -255,21 +260,20 @@ export class PresupuestadorComponent implements OnInit, OnDestroy {
     }
 
     this.isSubmitting = true;
-    this.error = null;
-    this.success = null;
 
-    // Filtrar solo items válidos
+    // solo items válidos
     const validItems = this.budgetItems.filter(item => this.isItemValid(item));
 
+    // armar DTO tal como lo espera tu backend
     const budgetDto: BudgetCreateDto = {
       Cliente: {
         CustomerId: this.selectedContacto!.CustomerId,
         Nombre: this.selectedContacto!.Nombre,
         Identificador: this.selectedContacto!.Identificador || '',
-        TipoDocumento: 'RUT', // TODO: Obtener del cliente cuando el backend lo provea
+        TipoDocumento: 'RUT',
         Email: this.selectedContacto!.Email || '',
         Telefono: this.selectedContacto!.Telefono || '',
-        DireccionFiscal: '' // TODO: Obtener dirección cuando el backend lo provea
+        DireccionFiscal: '' // TODO: completar cuando lo provea el backend
       },
       Productos: validItems.map(item => ({
         Name: item.Name,
@@ -278,22 +282,26 @@ export class PresupuestadorComponent implements OnInit, OnDestroy {
         Color: item.Color,
         amount: Number(item.amount),
         GlassThickness: String(item.GlassThickness),
-        GlassType: Number(item.GlassType),  // Asegurar que se envíe como número
-        TypeProduct: Number(item.TypeProduct),  // Asegurar que se envíe como número
-        Serie: Number(item.Serie)  // Asegurar que se envíe como número
+        GlassType: Number(item.GlassType),     // asegurar número
+        TypeProduct: Number(item.TypeProduct), // asegurar número
+        Serie: Number(item.Serie)              // asegurar número
       }))
     };
 
+    // crear presupuesto
     this.presupuestoService.crearPresupuesto(budgetDto).subscribe({
-      next: (response) => {
+      next: (response: any) => {
         this.isSubmitting = false;
-        this.success = 'Presupuesto generado exitosamente';
-        this.lastBudgetResult = response;
 
-        // Limpiar formulario después de éxito
-        setTimeout(() => {
-          this.resetForm();
-        }, 2000);
+        // normalizar Id -> siempre dejamos .id disponible
+        const id = response?.id ?? response?.Id ?? null;
+        this.lastBudgetResult = { ...response, id };
+
+        this.success = `Presupuesto generado exitosamente (ID: ${id ?? 'N/A'})`;
+
+        // Sugerencia: no resetees de inmediato para poder descargar el PDF.
+        // Si querés limpiar luego de descargar, llamá a this.resetForm() después de downloadBudget().
+        // setTimeout(() => this.resetForm(), 2000);
       },
       error: (err) => {
         this.isSubmitting = false;
@@ -302,6 +310,7 @@ export class PresupuestadorComponent implements OnInit, OnDestroy {
       }
     });
   }
+
 
   resetForm() {
     this.budgetItems = [];
@@ -332,11 +341,25 @@ export class PresupuestadorComponent implements OnInit, OnDestroy {
   }
 
   downloadBudget() {
-    if (this.lastBudgetResult) {
-      // TODO: Implementar descarga cuando el backend provea el archivo
-      console.log('Download budget:', this.lastBudgetResult);
-      this.success = 'Función de descarga próximamente disponible';
+    this.error = null; this.success = null;
+
+    const id =
+      this.lastBudgetResult?.id ??
+      this.presupuestoService.getLastBudget()?.id;
+
+    if (!id) {
+      this.error = 'Generá un presupuesto primero.';
+      return;
     }
+
+    this.presupuestoService.descargarPresupuestoPdf(id).subscribe({
+      next: (resp) =>
+        this.presupuestoService.saveHttpResponseAsFile(resp, `Presupuesto-${id}.pdf`),
+      error: (err) => {
+        console.error('Error al descargar PDF:', err);
+        this.error = 'No se pudo descargar el PDF.';
+      }
+    });
   }
 
   volverAlDashboard() {

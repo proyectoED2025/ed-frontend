@@ -7,6 +7,12 @@ export interface CustomerDto {
   Telefono: string;
   DireccionFiscal: string;
 }
+export interface DireccionDto {
+  calle?: string;
+  numero?: string;
+  ciudad?: string;
+  departamento?: string;
+}
 
 export interface ProductBudgetDto {
   Name: string;
@@ -33,14 +39,15 @@ export interface BudgetItem extends ProductBudgetDto {
 
 // Enums del backend con sus valores numéricos exactos
 export const GLASS_TYPES = [
-  { value: 1, label: 'Float' },
-  { value: 2, label: 'Templado' },
-  { value: 3, label: 'Laminado' },
-  { value: 4, label: 'Doble Acristalamiento' },
-  { value: 5, label: 'Bajo Emisivo' },
-  { value: 6, label: 'Reflectivo' },
-  { value: 7, label: 'Mateado' },
-  { value: 8, label: 'Decorativo' }
+  { value: 0, label: 'Transparente' },
+  { value: 1, label: 'Puntillado' },
+  { value: 2, label: 'Laminado' },
+  { value: 3, label: 'Miniboreal' },
+  { value: 4, label: 'Templado' },
+  { value: 5, label: 'Opacid' },
+  { value: 6, label: 'Espejado' },
+  { value: 7, label: 'Espejo' },
+  { value: 8, label: 'DVH' }
 ];
 
 export const PRODUCT_TYPES = [
@@ -72,8 +79,8 @@ export const SERIES = [
 ];
 
 export const GLASS_THICKNESS = [
-  { value: 3, label: '3 mm' },
-  { value: 4, label: '4 mm' },
+  { value: 1018, label: '3 mm' },
+  { value: 1001, label: '4 mm' },
   { value: 5, label: '5 mm' },
   { value: 6, label: '6 mm' },
   { value: 8, label: '8 mm' },
@@ -82,10 +89,9 @@ export const GLASS_THICKNESS = [
 ];
 
 export const COLORS = [
-  { value: 'natural', label: 'Natural anodizado' },
-  { value: 'bronce', label: 'Bronce' },
+  { value: 'anodizado', label: 'Natural anodizado' },
   { value: 'negro', label: 'Negro' },
   { value: 'blanco', label: 'Blanco' },
-  { value: 'gris', label: 'Gris plata' },
+  { value: 'anolock', label: 'Negro Anolock' },
   { value: 'madera', label: 'Simil madera' }
 ];

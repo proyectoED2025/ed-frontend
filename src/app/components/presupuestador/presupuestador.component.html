@@ -12,7 +12,7 @@
       {{ success }}
       <button type="button" class="btn-close" (click)="success = null"></button>
     </div>
-    
+
     <div *ngIf="error" class="alert alert-danger alert-dismissible">
       {{ error }}
       <button type="button" class="btn-close" (click)="error = null"></button>
@@ -26,36 +26,24 @@
         <span class="section-icon">👤</span>
         Seleccionar Cliente
       </h2>
-      
+
       <div class="contact-search-container">
         <div class="search-input-wrapper">
-          <input
-            type="text"
-            class="form-control search-input"
-            placeholder="Buscar cliente por nombre, identificador o email..."
-            [(ngModel)]="searchContacto"
-            (input)="onSearchContacto($event)"
-            [class.has-selection]="selectedContacto"
-            [disabled]="loadingContactos">
-          
+          <input type="text" class="form-control search-input"
+            placeholder="Buscar cliente por nombre, identificador o email..." [(ngModel)]="searchContacto"
+            (input)="onSearchContacto($event)" [class.has-selection]="selectedContacto" [disabled]="loadingContactos">
+
           <span class="search-icon" *ngIf="!loadingContactos">🔍</span>
           <span class="spinner-border spinner-border-sm search-icon" *ngIf="loadingContactos"></span>
-          
-          <button 
-            type="button" 
-            class="btn btn-sm btn-clear"
-            (click)="clearContacto()"
-            *ngIf="selectedContacto">
+
+          <button type="button" class="btn btn-sm btn-clear" (click)="clearContacto()" *ngIf="selectedContacto">
             ✕
           </button>
         </div>
 
         <!-- Dropdown de resultados -->
         <div class="search-dropdown" *ngIf="showContactDropdown">
-          <div 
-            class="search-result-item" 
-            *ngFor="let contacto of filteredContactos"
-            (click)="selectContacto(contacto)">
+          <div class="search-result-item" *ngFor="let contacto of filteredContactos" (click)="selectContacto(contacto)">
             <div class="result-name">{{ contacto.Nombre }}</div>
             <div class="result-details">
               <span class="badge bg-secondary">{{ contacto.Identificador }}</span>
@@ -112,22 +100,15 @@
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let item of budgetItems; let i = index" 
-                [class.invalid-row]="!item.isValid && (item.Name || item.Width || item.Heigth)">
+            <tr *ngFor="let item of budgetItems; let i = index"
+              [class.invalid-row]="!item.isValid && (item.Name || item.Width || item.Heigth)">
               <td>
-                <input 
-                  type="text" 
-                  class="form-control form-control-sm item-name-input"
-                  [(ngModel)]="item.Name"
-                  (change)="onItemChange(item)"
-                  (keypress)="onItemKeyPress($event, item, 'Name')"
-                  placeholder="Nombre producto"
-                  [class.is-invalid]="!item.Name && item.isValid === false">
+                <input type="text" class="form-control form-control-sm item-name-input" [(ngModel)]="item.Name"
+                  (change)="onItemChange(item)" (keypress)="onItemKeyPress($event, item, 'Name')"
+                  placeholder="Nombre producto" [class.is-invalid]="!item.Name && item.isValid === false">
               </td>
               <td>
-                <select 
-                  class="form-control form-control-sm"
-                  [(ngModel)]="item.TypeProduct"
+                <select class="form-control form-control-sm" [(ngModel)]="item.TypeProduct"
                   (change)="onItemChange(item)"
                   [class.is-invalid]="item.TypeProduct === null && item.isValid === false">
                   <option [ngValue]="null">Seleccionar</option>
@@ -137,10 +118,7 @@
                 </select>
               </td>
               <td>
-                <select 
-                  class="form-control form-control-sm"
-                  [(ngModel)]="item.Serie"
-                  (change)="onItemChange(item)"
+                <select class="form-control form-control-sm" [(ngModel)]="item.Serie" (change)="onItemChange(item)"
                   [class.is-invalid]="item.Serie === null && item.isValid === false">
                   <option [ngValue]="null">Seleccionar</option>
                   <option *ngFor="let serie of series" [ngValue]="serie.value">
@@ -149,10 +127,7 @@
                 </select>
               </td>
               <td>
-                <select 
-                  class="form-control form-control-sm"
-                  [(ngModel)]="item.GlassType"
-                  (change)="onItemChange(item)"
+                <select class="form-control form-control-sm" [(ngModel)]="item.GlassType" (change)="onItemChange(item)"
                   [class.is-invalid]="item.GlassType === null && item.isValid === false">
                   <option [ngValue]="null">Seleccionar</option>
                   <option *ngFor="let glass of glassTypes" [ngValue]="glass.value">
@@ -161,43 +136,25 @@
                 </select>
               </td>
               <td>
-                <select 
-                  class="form-control form-control-sm"
-                  [(ngModel)]="item.GlassThickness"
-                  (change)="onItemChange(item)"
-                  [class.is-invalid]="!item.GlassThickness && item.isValid === false">
+                <select class="form-control form-control-sm" [(ngModel)]="item.GlassThickness"
+                  (change)="onItemChange(item)" [class.is-invalid]="!item.GlassThickness && item.isValid === false">
                   <option *ngFor="let thickness of glassThickness" [value]="thickness.value">
                     {{ thickness.label }}
                   </option>
                 </select>
               </td>
               <td>
-                <input 
-                  type="number" 
-                  class="form-control form-control-sm"
-                  [(ngModel)]="item.Width"
-                  (change)="onItemChange(item)"
-                  (keypress)="onItemKeyPress($event, item, 'Width')"
-                  placeholder="mm"
-                  min="1"
-                  [class.is-invalid]="item.Width <= 0 && item.isValid === false">
+                <input type="number" class="form-control form-control-sm" [(ngModel)]="item.Width"
+                  (change)="onItemChange(item)" (keypress)="onItemKeyPress($event, item, 'Width')" placeholder="mm"
+                  min="1" [class.is-invalid]="item.Width <= 0 && item.isValid === false">
               </td>
               <td>
-                <input 
-                  type="number" 
-                  class="form-control form-control-sm"
-                  [(ngModel)]="item.Heigth"
-                  (change)="onItemChange(item)"
-                  (keypress)="onItemKeyPress($event, item, 'Heigth')"
-                  placeholder="mm"
-                  min="1"
-                  [class.is-invalid]="item.Heigth <= 0 && item.isValid === false">
+                <input type="number" class="form-control form-control-sm" [(ngModel)]="item.Heigth"
+                  (change)="onItemChange(item)" (keypress)="onItemKeyPress($event, item, 'Heigth')" placeholder="mm"
+                  min="1" [class.is-invalid]="item.Heigth <= 0 && item.isValid === false">
               </td>
               <td>
-                <select 
-                  class="form-control form-control-sm"
-                  [(ngModel)]="item.Color"
-                  (change)="onItemChange(item)"
+                <select class="form-control form-control-sm" [(ngModel)]="item.Color" (change)="onItemChange(item)"
                   [class.is-invalid]="!item.Color && item.isValid === false">
                   <option value="">Seleccionar</option>
                   <option *ngFor="let color of colors" [value]="color.value">
@@ -206,30 +163,17 @@
                 </select>
               </td>
               <td>
-                <input 
-                  type="number" 
-                  class="form-control form-control-sm"
-                  [(ngModel)]="item.amount"
-                  (change)="onItemChange(item)"
-                  (keypress)="onItemKeyPress($event, item, 'amount')"
-                  min="1"
+                <input type="number" class="form-control form-control-sm" [(ngModel)]="item.amount"
+                  (change)="onItemChange(item)" (keypress)="onItemKeyPress($event, item, 'amount')" min="1"
                   [class.is-invalid]="item.amount <= 0 && item.isValid === false">
               </td>
               <td>
                 <div class="btn-group btn-group-sm">
-                  <button 
-                    type="button" 
-                    class="btn btn-outline-primary"
-                    (click)="duplicateItem(i)"
-                    title="Duplicar">
+                  <button type="button" class="btn btn-outline-primary" (click)="duplicateItem(i)" title="Duplicar">
                     📋
                   </button>
-                  <button 
-                    type="button" 
-                    class="btn btn-outline-danger"
-                    (click)="removeItem(i)"
-                    [disabled]="budgetItems.length === 1"
-                    title="Eliminar">
+                  <button type="button" class="btn btn-outline-danger" (click)="removeItem(i)"
+                    [disabled]="budgetItems.length === 1" title="Eliminar">
                     🗑️
                   </button>
                 </div>
@@ -241,10 +185,7 @@
 
       <!-- Botón agregar ítem -->
       <div class="add-item-container">
-        <button 
-          type="button" 
-          class="btn btn-outline-success btn-sm"
-          (click)="addItem()">
+        <button type="button" class="btn btn-outline-success btn-sm" (click)="addItem()">
           ➕ Agregar Producto
         </button>
         <small class="text-muted ms-3">
@@ -277,19 +218,12 @@
         </div>
 
         <div class="action-buttons">
-          <button 
-            type="button" 
-            class="btn btn-primary btn-lg"
-            [disabled]="!canSubmit()"
-            (click)="grabarPresupuesto()">
+          <button type="button" class="btn btn-primary btn-lg" [disabled]="!canSubmit()" (click)="grabarPresupuesto()">
             <span *ngIf="isSubmitting" class="spinner-border spinner-border-sm me-2"></span>
             {{ isSubmitting ? 'Generando...' : '📄 Generar Presupuesto' }}
           </button>
 
-          <button 
-            type="button" 
-            class="btn btn-outline-secondary"
-            (click)="resetForm()">
+          <button type="button" class="btn btn-outline-secondary" (click)="resetForm()">
             🔄 Limpiar Formulario
           </button>
         </div>
@@ -298,11 +232,8 @@
         <div class="budget-result" *ngIf="lastBudgetResult">
           <div class="alert alert-info">
             <h5>✅ Presupuesto Generado</h5>
-            <p>ID: {{ lastBudgetResult.id || 'N/A' }}</p>
-            <button 
-              type="button" 
-              class="btn btn-sm btn-primary"
-              (click)="downloadBudget()">
+            <p>ID: {{ lastBudgetResult.Id || 'N/A' }}</p>
+            <button type="button" class="btn btn-sm btn-primary" (click)="downloadBudget()">
               📥 Descargar PDF
             </button>
           </div>

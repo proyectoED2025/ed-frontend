@@ -27,3 +27,5 @@ export const routes: Routes = [
   { path: 'insumos', component: InsumosComponent, canActivate: [authGuard] },
   { path: '**', redirectTo: '/dashboard' }
 ];
+
+

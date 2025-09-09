@@ -25,6 +25,7 @@ export const API_ROUTES = {
 
   // Budget endpoints
   CREAR_PRESUPUESTO: '/crearPresupuesto',
+  PDF: (id: number) => `/${id}/pdf`,
 
   // Supplies endpoints
   ALTA_PERFIL: '/altaPerfil',
