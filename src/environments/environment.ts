@@ -1,4 +1,4 @@
 export const environment = {
   production: false,
-  apiBase: 'https://api.edaberturas.lat'
+  apiBase: 'https://localhost:7001/'
 };

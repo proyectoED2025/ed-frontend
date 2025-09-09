@@ -37,7 +37,9 @@ export class RegisterComponent {
 
     if (!this.isFormValid()) return;
 
-    this.authService.register(this.data).subscribe({
+    const { confirmPassword, ...dataToSend } = this.data;
+
+    this.authService.register(dataToSend).subscribe({
       next: (response) => {
         this.success = 'Usuario registrado correctamente.';
         setTimeout(() => {
